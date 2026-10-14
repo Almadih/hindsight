@@ -24,6 +24,16 @@ export async function fetchGames(platform: Platform, username: string): Promise<
   return games;
 }
 
+/** A stored review by its game hash (share links), or null if there is none. */
+export async function getReview(hash: string): Promise<Report | null> {
+  try {
+    return await request<Report>(`/api/review/${encodeURIComponent(hash)}`);
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 404 || err.status === 422)) return null;
+    throw err;
+  }
+}
+
 /** The shared cached review for this game, or null if nobody has analyzed it yet. */
 export async function cachedReview(pgn: string): Promise<Report | null> {
   try {

@@ -24,10 +24,35 @@ type Props = {
   startFen: string;
   /** Came from the shared cache (someone else's browser analyzed it), so offer a private re-check. */
   shared: boolean;
+  /** Set when the review is stored and can be opened by link. */
+  shareUrl?: string;
   onReanalyze: () => void;
 };
 
-export function Review({ report, startFen, shared, onReanalyze }: Props) {
+export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Props) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const copyLink = async () => {
+    if (!shareUrl) return;
+    let ok = false;
+    try {
+      // writeText can hang rather than reject (hidden tab, pending permission), so cap the wait.
+      await Promise.race([
+        navigator.clipboard.writeText(shareUrl),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("clipboard timeout")), 1000)),
+      ]);
+      ok = true;
+    } catch {
+      // Clipboard API refused or stalled (no focus, no permission, insecure context): fall back to a selected textarea.
+      const area = Object.assign(document.createElement("textarea"), { value: shareUrl });
+      area.style.cssText = "position:fixed;opacity:0";
+      document.body.append(area);
+      area.select();
+      ok = document.execCommand("copy");
+      area.remove();
+    }
+    setCopyState(ok ? "copied" : "failed");
+    setTimeout(() => setCopyState("idle"), 2500);
+  };
   const [ply, setPly] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [tab, setTab] = useState<Tab>("summary");
@@ -135,6 +160,16 @@ export function Review({ report, startFen, shared, onReanalyze }: Props) {
               )}
             </p>
           </div>
+          {shareUrl && (
+            <button
+              onClick={copyLink}
+              className="flex shrink-0 items-center gap-1.5 rounded px-2 py-1.5 text-sm font-semibold text-muted hover:bg-raised hover:text-fg"
+              aria-live="polite"
+            >
+              <Icon name="link" size={18} />
+              {{ idle: "Copy link", copied: "Copied", failed: "Copy the address bar" }[copyState]}
+            </button>
+          )}
           <Link href="/" className="rounded p-1.5 text-muted hover:bg-raised hover:text-fg" aria-label="Review another game" title="Review another game">
             <Icon name="back" />
           </Link>

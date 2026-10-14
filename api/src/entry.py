@@ -36,6 +36,14 @@ async def games(platform: Literal["chesscom", "lichess"], username: str = Path(p
     return {"games": result}
 
 
+@app.get("/api/review/{game_hash}")
+async def review(game_hash: str = Path(pattern=r"^[0-9a-f]{64}$"), env=env):
+    """A shared review by its game hash: what share links (/review?g=<hash>) open."""
+    if report := await get_review(env.DB, game_hash):
+        return report
+    raise HTTPException(404, "review not found")
+
+
 @app.post("/api/analyze")
 async def analyze_game(req: AnalyzeRequest, request: Request, env=env):
     try:

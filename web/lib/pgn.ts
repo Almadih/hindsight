@@ -12,3 +12,13 @@ export function parsePgn(input: string): { pgn: string; fens: string[] } {
   if (!moves.length) throw new Error("PGN has no moves");
   return { pgn: chess.pgn(), fens: [moves[0].before, ...moves.map((m) => m.after)] };
 }
+
+export const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+/** Rebuild a game's PGN from a stored review, for reviews opened by link (no PGN in this tab). */
+export function reportPgn(headers: Record<string, string>, sans: string[]): string {
+  const chess = new Chess(headers.FEN ?? START_FEN);
+  for (const san of sans) chess.move(san);
+  for (const [k, v] of Object.entries(headers)) chess.setHeader(k, v);
+  return chess.pgn();
+}
