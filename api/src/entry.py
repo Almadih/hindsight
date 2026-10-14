@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Path, Request
@@ -8,7 +9,7 @@ from workers.asgi import entrypoint, env
 from review.analyze import AnalysisError, AnalyzeRequest, analyze, parse_game
 from review.coach import add_coach
 from review.fetchers import UpstreamError, fetch_games
-from review.store import get_review, put_review, reviews_last_day
+from review.store import allow_analysis, get_review, put_review, reviews_last_day
 
 GAMES_TTL = 300  # seconds a fetched game list stays in KV
 # Hard ceiling on coach AI calls per rolling day; past it, reviews still work with fact-based comments.
@@ -44,9 +45,9 @@ async def analyze_game(req: AnalyzeRequest, request: Request, env=env):
         if req.evals is None:
             raise HTTPException(404, "not analyzed yet")
         # Only new analyses cost anything (CPU, and an AI call for shared ones), so only they are limited.
-        outcome = await env.ANALYZE_LIMIT.limit({"key": request.headers.get("cf-connecting-ip", "unknown")})
-        if not outcome["success"]:
-            raise HTTPException(429, "Too many new analyses from your connection. Try again in a minute.")
+        # Counted in D1 rather than with Workers rate limits, which count per Cloudflare location.
+        if not await allow_analysis(env.DB, request.headers.get("cf-connecting-ip", "unknown"), int(time.time())):
+            raise HTTPException(429, "Too many new analyses from your connection. Try again later.")
         report = analyze(parsed, req.evals)
     except AnalysisError as e:
         raise HTTPException(422, str(e)) from e
