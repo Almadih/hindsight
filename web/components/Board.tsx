@@ -9,8 +9,17 @@ const LIGHT = { backgroundColor: "#ebecd0" };
 const DARK = { backgroundColor: "#739552" };
 const BEST_ARROW = "rgba(129, 182, 76, 0.9)";
 
+type Props = {
+  fen: string;
+  flipped: boolean;
+  /** The move that led to `fen`, decorated with its badge; null for the start position and for variations. */
+  move: ReviewMove | null;
+  /** Retry mode: return true to accept the dropped move. */
+  onMove?: (from: string, to: string) => boolean;
+};
+
 /** Board at one ply: the played move tinted by its badge, badge on the target square, best move as an arrow. */
-export function Board({ fen, flipped, move }: { fen: string; flipped: boolean; move: ReviewMove | null }) {
+export function Board({ fen, flipped, move, onMove }: Props) {
   const from = move?.uci.slice(0, 2);
   const to = move?.uci.slice(2, 4);
   const tint = move && { backgroundColor: `color-mix(in srgb, ${BADGE[move.badge].color} 50%, transparent)` };
@@ -22,7 +31,8 @@ export function Board({ fen, flipped, move }: { fen: string; flipped: boolean; m
         id: "review-board",
         position: fen,
         boardOrientation: flipped ? "black" : "white",
-        allowDragging: false,
+        allowDragging: Boolean(onMove),
+        onPieceDrop: ({ sourceSquare, targetSquare }) => Boolean(onMove && targetSquare && onMove(sourceSquare, targetSquare)),
         animationDurationInMs: 180,
         lightSquareStyle: LIGHT,
         darkSquareStyle: DARK,

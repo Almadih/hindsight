@@ -33,7 +33,7 @@ function AccuracyRing({ value, side }: { value: number | null; side: Side }) {
 }
 
 export function SummaryCard({ report, names }: { report: Report; names: Record<Side, string> }) {
-  const { accuracy, counts } = report;
+  const { accuracy, counts, elo } = report;
   return (
     <div className="min-h-0 flex-1 space-y-5 overflow-y-auto text-sm">
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
@@ -46,6 +46,9 @@ export function SummaryCard({ report, names }: { report: Report; names: Record<S
           <AccuracyRing value={accuracy.black} side="black" />
           <span className="max-w-full truncate font-semibold">{names.black}</span>
         </div>
+        <span className="rounded bg-raised py-1 text-base font-semibold tabular-nums">{elo.white ?? "–"}</span>
+        <span className="text-xs text-muted">Game rating</span>
+        <span className="rounded bg-raised py-1 text-base font-semibold tabular-nums">{elo.black ?? "–"}</span>
       </div>
 
       <table className="w-full">

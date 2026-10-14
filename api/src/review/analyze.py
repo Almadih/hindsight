@@ -1,17 +1,23 @@
 """PGN + client engine evals -> full game review report."""
 
+import hashlib
 import io
 from collections import Counter
+from dataclasses import dataclass
 
 import chess
 import chess.pgn
 from pydantic import BaseModel, Field, model_validator
 
 from .classify import MoveFacts, classify, is_sacrifice
+from .elo import estimate
 from .openings import opening_name
+from .tactics import describe, parse_move
 from .winprob import MATE_CP, game_accuracy, move_accuracy, score_to_cp, win_pct
 
 MAX_PLIES = 600
+# Part of every game hash: bump it whenever classification output changes so stale cached reviews are never served.
+ANALYSIS_VERSION = "2"
 PHASES = ("opening", "middlegame", "endgame")
 
 
@@ -37,7 +43,8 @@ class PositionEval(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     pgn: str = Field(max_length=50_000)
-    evals: list[PositionEval] = Field(max_length=MAX_PLIES + 1)
+    # Omitted on the first request: the client only runs Stockfish if no cached review exists.
+    evals: list[PositionEval] | None = Field(None, max_length=MAX_PLIES + 1)
 
 
 class AnalysisError(ValueError):
@@ -79,8 +86,15 @@ def _round(x: float | None) -> float | None:
     return None if x is None else round(x, 1)
 
 
-def analyze(req: AnalyzeRequest) -> dict:
-    game = chess.pgn.read_game(io.StringIO(req.pgn))
+@dataclass
+class ParsedGame:
+    game: chess.pgn.Game
+    moves: list[chess.Move]
+    hash: str
+
+
+def parse_game(pgn: str) -> ParsedGame:
+    game = chess.pgn.read_game(io.StringIO(pgn))
     if game is None:
         raise AnalysisError("no game found in PGN")
     if game.errors:
@@ -93,17 +107,32 @@ def analyze(req: AnalyzeRequest) -> dict:
         raise AnalysisError("PGN has no moves")
     if len(moves) > MAX_PLIES:
         raise AnalysisError(f"game too long (max {MAX_PLIES} plies)")
-    if len(req.evals) != len(moves) + 1:
-        raise AnalysisError(f"expected {len(moves) + 1} evals, got {len(req.evals)}")
+    # Same moves from the same start = same game, whatever the headers say.
+    start = " ".join(board.fen().split()[:3])
+    key = f"{ANALYSIS_VERSION}|{start}|{' '.join(m.uci() for m in moves)}"
+    return ParsedGame(game, moves, hashlib.sha256(key.encode()).hexdigest())
 
-    def check_fen(b: chess.Board, ev: PositionEval):
-        # Compare placement + side to move only: en passant and move counters differ between chess libraries.
-        if ev.fen.split()[:2] != b.fen().split()[:2]:
-            raise AnalysisError(f"eval FEN mismatch at {b.fen()}")
 
-    check_fen(board, req.evals[0])
-    cp_before = _position_cp(board, req.evals[0])
-    start = _white_eval(board, cp_before, _best_mate(board, req.evals[0]))
+def _check_eval(board: chess.Board, ev: PositionEval):
+    # Compare placement + side to move only: en passant and move counters differ between chess libraries.
+    if ev.fen.split()[:2] != board.fen().split()[:2]:
+        raise AnalysisError(f"eval FEN mismatch at {board.fen()}")
+    # Reviews are shared, so reject obviously bogus engine output. Fake scores on legal moves still get through:
+    # first writer wins for a game hash (accepted risk, see plan).
+    for line in ev.lines:
+        if parse_move(board, line.uci) is None:
+            raise AnalysisError(f"illegal engine move {line.uci} at {board.fen()}")
+
+
+def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
+    game, moves = parsed.game, parsed.moves
+    board = game.board()
+    if len(evals) != len(moves) + 1:
+        raise AnalysisError(f"expected {len(moves) + 1} evals, got {len(evals)}")
+
+    _check_eval(board, evals[0])
+    cp_before = _position_cp(board, evals[0])
+    start = _white_eval(board, cp_before, _best_mate(board, evals[0]))
 
     out_moves = []
     accs = {chess.WHITE: [], chess.BLACK: []}
@@ -113,21 +142,26 @@ def analyze(req: AnalyzeRequest) -> dict:
     prev_win_lost = None
 
     for i, move in enumerate(moves):
-        ev_before, ev_after = req.evals[i], req.evals[i + 1]
+        ev_before, ev_after = evals[i], evals[i + 1]
         mover = board.turn
         phase = _phase(board)
         san = board.san(move)
         sacrifice = is_sacrifice(board, move)
         mate_before = _best_mate(board, ev_before)
+        before = board.copy(stack=False)
+        lines = ev_before.lines
+        alternatives = [
+            {"uci": line.uci, "san": board.san(chess.Move.from_uci(line.uci)), "w": _round(win_pct(score_to_cp(line.cp, line.mate)))}
+            for line in lines
+        ]
 
         board.push(move)
-        check_fen(board, ev_after)
+        _check_eval(board, ev_after)
         cp_after = _position_cp(board, ev_after)  # opponent's perspective
         mate_after = _best_mate(board, ev_after)
         name = opening_name(board)
         opening = name or opening
 
-        lines = ev_before.lines
         facts = MoveFacts(
             w_before=win_pct(cp_before),
             w_after=100 - win_pct(cp_after),
@@ -165,6 +199,16 @@ def analyze(req: AnalyzeRequest) -> dict:
                 "accuracy": _round(acc),
                 "bestUci": lines[0].uci if lines else None,
                 "bestPv": lines[0].pv if lines else [],
+                "alternatives": alternatives,
+                "tactics": describe(
+                    before,
+                    move,
+                    badge,
+                    lines[0].uci if lines else None,
+                    ev_after.lines[0].uci if ev_after.lines else None,
+                    mate_before,
+                    mate_after,
+                ),
                 **_white_eval(board, cp_after, mate_after),
             }
         )
@@ -174,15 +218,19 @@ def analyze(req: AnalyzeRequest) -> dict:
     def side(c: chess.Color) -> str:
         return "white" if c == chess.WHITE else "black"
 
+    white_acc = game_accuracy(accs[chess.WHITE])
+    black_acc = game_accuracy(accs[chess.BLACK])
     return {
+        "hash": parsed.hash,
         "headers": dict(game.headers),
         "opening": opening,
         "start": start,
         "moves": out_moves,
         "accuracy": {
-            "white": _round(game_accuracy(accs[chess.WHITE])),
-            "black": _round(game_accuracy(accs[chess.BLACK])),
+            "white": _round(white_acc),
+            "black": _round(black_acc),
             "phases": {side(c): {p: _round(game_accuracy(phase_accs[c][p])) for p in PHASES} for c in chess.COLORS},
         },
         "counts": {side(c): dict(counts[c]) for c in chess.COLORS},
+        "elo": {"white": estimate(white_acc, game.headers.get("WhiteElo")), "black": estimate(black_acc, game.headers.get("BlackElo"))},
     }

@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import type { Badge, WhiteEval } from "./types";
+import type { Badge, ReviewMove, WhiteEval } from "./types";
 
 /** Display order, best to worst. */
 export const BADGE_ORDER: Badge[] = [
@@ -52,4 +52,57 @@ export function uciToSan(fen: string, uci: string): string | null {
   } catch {
     return null;
   }
+}
+
+const START_COUNT: Record<string, number> = { q: 1, r: 2, b: 2, n: 2, p: 8 };
+
+/** Pieces each side has captured, as react-chessboard piece codes ("bQ", "wP"…), most valuable first. */
+export function capturedPieces(fen: string): { white: string[]; black: string[] } {
+  const count: Record<string, number> = {};
+  for (const ch of fen.split(" ")[0]) count[ch] = (count[ch] ?? 0) + 1;
+  const missing = (color: "w" | "b") =>
+    Object.entries(START_COUNT).flatMap(([t, n]) => {
+      // Promotions can push a count above the start; never show a negative capture.
+      const left = count[color === "w" ? t.toUpperCase() : t] ?? 0;
+      return Array<string>(Math.max(0, n - left)).fill(`${color}${t.toUpperCase()}`);
+    });
+  return { white: missing("b"), black: missing("w") };
+}
+
+/** Retry verdict: the engine's best move, or another top line within 2% win of it. */
+export function isGoodRetry(move: ReviewMove, uci: string): boolean {
+  const best = move.alternatives[0];
+  const alt = move.alternatives.find((a) => a.uci === uci);
+  return Boolean(best && alt && best.w - alt.w < 2);
+}
+
+const LINE_MAX = 6; // plies: never look further than three moves each
+const LINE_QUIET = 4; // plies shown when nothing decisive happens
+
+/**
+ * The short, high-impact part of an engine line, the way a coach would show it: up to checkmate, a promotion,
+ * or a settled material win (≥2 points, exchange finished); otherwise just the first 4 plies.
+ */
+export function followUpLine(fen: string, pv: string[]): { fens: string[]; sans: string[] } {
+  const chess = new Chess(fen);
+  const sign = chess.turn() === "w" ? 1 : -1;
+  const start = materialDiff(fen) * sign;
+  const fens = [fen];
+  const sans: string[] = [];
+  for (const uci of pv.slice(0, LINE_MAX)) {
+    let move;
+    try {
+      move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+    } catch {
+      break;
+    }
+    fens.push(chess.fen());
+    sans.push(move.san);
+    const next = pv[sans.length];
+    const exchangeOver = !next || !chess.get(next.slice(2, 4) as Parameters<typeof chess.get>[0]);
+    if (chess.isCheckmate() || move.promotion || (materialDiff(chess.fen()) * sign - start >= 2 && exchangeOver)) {
+      return { fens, sans };
+    }
+  }
+  return { fens: fens.slice(0, LINE_QUIET + 1), sans: sans.slice(0, LINE_QUIET) };
 }

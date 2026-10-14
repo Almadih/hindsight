@@ -20,15 +20,21 @@ export type ReviewMove = WhiteEval & {
   accuracy: number;
   bestUci: string | null;
   bestPv: string[];
+  /** Engine's top lines from the position before the move; w = mover's win%. */
+  alternatives: { uci: string; san: string; w: number }[];
+  tactics: string[];
+  coach?: string | null;
 };
 
 export type Report = {
+  hash: string;
   headers: Record<string, string>;
   opening: string | null;
   start: WhiteEval;
   moves: ReviewMove[];
   accuracy: Record<Side, number | null> & { phases: Record<Side, Record<Phase, number | null>> };
   counts: Record<Side, Partial<Record<Badge, number>>>;
+  elo: Record<Side, number | null>;
 };
 
 export type Player = { name: string; rating: number | null };

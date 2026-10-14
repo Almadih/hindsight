@@ -1,26 +1,35 @@
 "use client";
 
+import { Chess } from "chess.js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { materialDiff } from "@/lib/review";
+import { capturedPieces, followUpLine, isGoodRetry, materialDiff } from "@/lib/review";
 import type { Report, Side } from "@/lib/types";
 import { Board } from "./Board";
 import { EvalBar } from "./EvalBar";
 import { EvalGraph } from "./EvalGraph";
 import { Icon } from "./Icon";
-import { MoveCard } from "./MoveCard";
+import { MoveCard, type Mode } from "./MoveCard";
 import { MoveList } from "./MoveList";
 import { PlayerBar } from "./PlayerBar";
 import { SummaryCard } from "./SummaryCard";
 
 type Tab = "summary" | "moves";
 
+const LINE_STEP_MS = 700;
+const GAME: Mode = { kind: "game" };
+
 export function Review({ report, startFen }: { report: Report; startFen: string }) {
   const [ply, setPly] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [tab, setTab] = useState<Tab>("summary");
+  const [mode, setMode] = useState<Mode>(GAME);
   const last = report.moves.length;
-  const go = (p: number) => setPly(Math.max(0, Math.min(last, p)));
+  // Any navigation leaves a follow-up line or retry and returns to the game.
+  const go = (p: number) => {
+    setMode(GAME);
+    setPly(Math.max(0, Math.min(last, p)));
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -28,6 +37,7 @@ export function Review({ report, startFen }: { report: Report; startFen: string 
       const step = { ArrowLeft: -1, ArrowRight: 1, Home: -Infinity, End: Infinity }[e.key];
       if (step !== undefined) {
         e.preventDefault();
+        setMode(GAME);
         setPly((p) => Math.max(0, Math.min(last, p + step)));
         setTab("moves");
       } else if (e.key === "f") {
@@ -38,13 +48,37 @@ export function Review({ report, startFen }: { report: Report; startFen: string 
     return () => window.removeEventListener("keydown", onKey);
   }, [last]);
 
+  // Play the engine line out one move at a time.
+  useEffect(() => {
+    if (mode.kind !== "line" || mode.index >= mode.fens.length - 1) return;
+    const t = setTimeout(() => setMode({ ...mode, index: mode.index + 1 }), LINE_STEP_MS);
+    return () => clearTimeout(t);
+  }, [mode]);
+
   const move = ply ? report.moves[ply - 1] : null;
-  const fen = move?.fen ?? startFen;
   const fenBefore = ply > 1 ? report.moves[ply - 2].fen : startFen;
+  const fen = mode.kind === "line" ? mode.fens[mode.index] : mode.kind === "retry" ? mode.fen : (move?.fen ?? startFen);
   const { headers } = report;
   const names: Record<Side, string> = { white: headers.White || "White", black: headers.Black || "Black" };
   const ratings: Record<Side, string | undefined> = { white: headers.WhiteElo, black: headers.BlackElo };
   const material = materialDiff(fen);
+  const captured = capturedPieces(fen);
+
+  const followUp = () => move && setMode({ kind: "line", ...followUpLine(fenBefore, move.bestPv), index: 0 });
+  const retry = () => setMode({ kind: "retry", fen: fenBefore, feedback: null });
+  const tryMove = (from: string, to: string): boolean => {
+    if (!move || mode.kind !== "retry" || mode.feedback?.ok) return false;
+    const chess = new Chess(mode.fen);
+    let played;
+    try {
+      played = chess.move({ from, to, promotion: "q" });
+    } catch {
+      return false; // illegal: the piece snaps back
+    }
+    const ok = isGoodRetry(move, played.lan);
+    setMode({ kind: "retry", fen: ok ? chess.fen() : mode.fen, feedback: { ok, san: played.san } });
+    return ok;
+  };
   const [top, bottom]: Side[] = flipped ? ["white", "black"] : ["black", "white"];
   const selectFromSidebar = (p: number) => {
     go(p);
@@ -54,14 +88,14 @@ export function Review({ report, startFen }: { report: Report; startFen: string 
   return (
     <main className="mx-auto grid w-full max-w-[1240px] gap-5 p-3 sm:p-5 lg:h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
       <section className="mx-auto flex w-full max-w-[calc(100dvh-6rem)] flex-col gap-1.5 lg:self-center" aria-label="Board">
-        <PlayerBar side={top} name={names[top]} rating={ratings[top]} material={material} />
+        <PlayerBar side={top} name={names[top]} rating={ratings[top]} material={material} captured={captured[top]} />
         <div className="flex gap-2">
           <EvalBar ev={move ?? report.start} flipped={flipped} />
           <div className="min-w-0 flex-1 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <Board fen={fen} flipped={flipped} move={move} />
+            <Board fen={fen} flipped={flipped} move={mode.kind === "game" ? move : null} onMove={mode.kind === "retry" ? tryMove : undefined} />
           </div>
         </div>
-        <PlayerBar side={bottom} name={names[bottom]} rating={ratings[bottom]} material={material} />
+        <PlayerBar side={bottom} name={names[bottom]} rating={ratings[bottom]} material={material} captured={captured[bottom]} />
       </section>
 
       <aside className="flex min-h-[520px] flex-col gap-4 rounded-lg bg-surface p-4 lg:my-5 lg:min-h-0">
@@ -108,7 +142,15 @@ export function Review({ report, startFen }: { report: Report; startFen: string 
             </>
           ) : (
             <>
-              <MoveCard move={move} fenBefore={fenBefore} opening={report.opening} />
+              <MoveCard
+                move={move}
+                fenBefore={fenBefore}
+                opening={report.opening}
+                mode={mode}
+                onFollowUp={followUp}
+                onRetry={retry}
+                onExit={() => setMode(GAME)}
+              />
               <MoveList moves={report.moves} ply={ply} onSelect={go} />
             </>
           )}

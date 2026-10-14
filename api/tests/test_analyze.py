@@ -3,7 +3,7 @@ import io
 import chess.pgn
 import pytest
 
-from review.analyze import AnalysisError, AnalyzeRequest, analyze
+from review.analyze import AnalysisError, PositionEval, analyze, parse_game
 
 OPERA = """[Event "Paris"]
 [White "Paul Morphy"]
@@ -26,8 +26,12 @@ def synthetic_evals(pgn: str) -> list[dict]:
     return evals
 
 
+def run(pgn: str, evals: list[dict]) -> dict:
+    return analyze(parse_game(pgn), [PositionEval(**e) for e in evals])
+
+
 def test_opera_game_report():
-    report = analyze(AnalyzeRequest(pgn=OPERA, evals=synthetic_evals(OPERA)))
+    report = run(OPERA, synthetic_evals(OPERA))
     moves = report["moves"]
     assert len(moves) == 33
     assert [m["badge"] for m in moves[:4]] == ["book"] * 4
@@ -42,23 +46,46 @@ def test_opera_game_report():
 
 def test_eval_count_mismatch():
     with pytest.raises(AnalysisError, match="expected 34 evals"):
-        analyze(AnalyzeRequest(pgn=OPERA, evals=synthetic_evals(OPERA)[:-1]))
+        run(OPERA, synthetic_evals(OPERA)[:-1])
 
 
 def test_fen_mismatch():
     evals = synthetic_evals(OPERA)
     evals[3]["fen"] = chess.STARTING_FEN
     with pytest.raises(AnalysisError, match="FEN mismatch"):
-        analyze(AnalyzeRequest(pgn=OPERA, evals=evals))
+        run(OPERA, evals)
 
 
 def test_missing_lines_on_live_position():
     evals = synthetic_evals(OPERA)
     evals[5]["lines"] = []
     with pytest.raises(AnalysisError, match="missing engine lines"):
-        analyze(AnalyzeRequest(pgn=OPERA, evals=evals))
+        run(OPERA, evals)
 
 
 def test_bad_pgn():
     with pytest.raises(AnalysisError):
-        analyze(AnalyzeRequest(pgn="1. e4 Ke7 2. Qh5 Kxh5", evals=[]))
+        parse_game("1. e4 Ke7 2. Qh5 Kxh5")
+
+
+def test_hash_ignores_headers_but_not_moves(monkeypatch):
+    base = parse_game(OPERA).hash
+    assert parse_game(OPERA.replace("Paul Morphy", "Someone Else")).hash == base
+    assert parse_game(OPERA.replace("17.Rd8#", "17.Rd7")).hash != base
+    monkeypatch.setattr("review.analyze.ANALYSIS_VERSION", "test")
+    assert parse_game(OPERA).hash != base
+
+
+def test_illegal_engine_move_rejected():
+    evals = synthetic_evals(OPERA)
+    evals[2]["lines"][0]["uci"] = "e2e5"
+    with pytest.raises(AnalysisError, match="illegal engine move"):
+        run(OPERA, evals)
+
+
+def test_report_has_alternatives_tactics_and_elo():
+    report = run(OPERA, synthetic_evals(OPERA))
+    assert report["moves"][0]["alternatives"] == [{"uci": "e2e4", "san": "e4", "w": 50.0}]
+    assert any("offers material" in f for f in next(m for m in report["moves"] if m["san"] == "Nxb5")["tactics"])
+    assert set(report["elo"]) == {"white", "black"}
+    assert len(report["hash"]) == 64

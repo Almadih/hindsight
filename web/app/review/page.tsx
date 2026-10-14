@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Review } from "@/components/Review";
-import { analyzeGame } from "@/lib/api";
+import { analyzeGame, cachedReview } from "@/lib/api";
 import { analyzePositions } from "@/lib/engine/pool";
 import { parsePgn } from "@/lib/pgn";
 import type { Report } from "@/lib/types";
 
 type State =
+  | { stage: "lookup" }
   | { stage: "engine"; done: number; total: number }
   | { stage: "server" }
   | { stage: "done"; report: Report; startFen: string }
   | { stage: "error"; message: string };
 
 export default function ReviewPage() {
-  const [state, setState] = useState<State>({ stage: "engine", done: 0, total: 0 });
+  const [state, setState] = useState<State>({ stage: "lookup" });
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -24,6 +25,10 @@ export default function ReviewPage() {
         const input = sessionStorage.getItem("pgn");
         if (!input) throw new Error("No game to review yet. Pick a game or paste a PGN first.");
         const { pgn, fens } = parsePgn(input);
+        // Someone may already have reviewed this exact game: skip the engine entirely.
+        const cached = await cachedReview(pgn);
+        if (cached) return setState({ stage: "done", report: cached, startFen: fens[0] });
+        if (ctrl.signal.aborted) return;
         setState({ stage: "engine", done: 0, total: fens.length });
         const evals = await analyzePositions(fens, {
           signal: ctrl.signal,
@@ -53,12 +58,16 @@ export default function ReviewPage() {
           </>
         ) : (
           <>
-            <p className="font-semibold">{state.stage === "server" ? "Classifying moves…" : "Analyzing with Stockfish…"}</p>
+            <p className="font-semibold">{
+                { lookup: "Looking for an existing review…", engine: "Analyzing with Stockfish…", server: "Classifying moves and writing coach notes…" }[
+                  state.stage
+                ]
+              }</p>
             <progress
               className="h-2 w-full"
               aria-label="Analysis progress"
-              value={state.stage === "server" ? 1 : state.done}
-              max={state.stage === "server" ? 1 : state.total || 1}
+              value={state.stage === "engine" ? state.done : state.stage === "server" ? 1 : undefined}
+              max={state.stage === "engine" ? state.total || 1 : 1}
             />
             <p className="text-sm text-muted tabular-nums">
               {state.stage === "engine" && state.total > 0 ? `${state.done} of ${state.total} positions` : " "}
