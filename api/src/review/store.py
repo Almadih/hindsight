@@ -20,6 +20,12 @@ async def get_review(db, game_hash: str) -> dict | None:
     return json.loads(row["report_json"]) if row else None
 
 
+async def reviews_last_day(db) -> int:
+    """New shared reviews in the past 24 hours: each one cost one coach AI call."""
+    row = await db.prepare("SELECT COUNT(*) AS n FROM analyzed_games WHERE created_at > datetime('now', '-1 day')").first()
+    return row["n"] if row else 0
+
+
 async def put_review(db, report: dict, pgn: str) -> None:
     """First writer wins: a concurrent duplicate analysis is simply dropped."""
     h = report["headers"]

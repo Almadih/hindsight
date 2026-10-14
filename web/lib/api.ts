@@ -34,10 +34,11 @@ export async function cachedReview(pgn: string): Promise<Report | null> {
   }
 }
 
-export function analyzeGame(pgn: string, evals?: PositionEval[]): Promise<Report> {
+/** `fresh` re-analyzes privately: the shared cached review is neither used nor changed. */
+export function analyzeGame(pgn: string, evals?: PositionEval[], fresh = false): Promise<Report> {
   return request<Report>("/api/analyze", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ pgn, evals }),
+    body: JSON.stringify({ pgn, evals, fresh }),
   });
 }

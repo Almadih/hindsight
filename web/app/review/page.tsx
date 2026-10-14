@@ -12,11 +12,13 @@ type State =
   | { stage: "lookup" }
   | { stage: "engine"; done: number; total: number }
   | { stage: "server" }
-  | { stage: "done"; report: Report; startFen: string }
+  | { stage: "done"; report: Report; startFen: string; shared: boolean }
   | { stage: "error"; message: string };
 
 export default function ReviewPage() {
   const [state, setState] = useState<State>({ stage: "lookup" });
+  // True after the user asks to re-check a shared review with their own engine.
+  const [fresh, setFresh] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -26,8 +28,8 @@ export default function ReviewPage() {
         if (!input) throw new Error("No game to review yet. Pick a game or paste a PGN first.");
         const { pgn, fens } = parsePgn(input);
         // Someone may already have reviewed this exact game: skip the engine entirely.
-        const cached = await cachedReview(pgn);
-        if (cached) return setState({ stage: "done", report: cached, startFen: fens[0] });
+        const cached = fresh ? null : await cachedReview(pgn);
+        if (cached) return setState({ stage: "done", report: cached, startFen: fens[0], shared: true });
         if (ctrl.signal.aborted) return;
         setState({ stage: "engine", done: 0, total: fens.length });
         const evals = await analyzePositions(fens, {
@@ -35,15 +37,28 @@ export default function ReviewPage() {
           onProgress: (done, total) => setState({ stage: "engine", done, total }),
         });
         setState({ stage: "server" });
-        setState({ stage: "done", report: await analyzeGame(pgn, evals), startFen: fens[0] });
+        setState({ stage: "done", report: await analyzeGame(pgn, evals, fresh), startFen: fens[0], shared: false });
       } catch (err) {
         if (!ctrl.signal.aborted) setState({ stage: "error", message: (err as Error).message });
       }
     })();
     return () => ctrl.abort();
-  }, []);
+  }, [fresh]);
 
-  if (state.stage === "done") return <Review report={state.report} startFen={state.startFen} />;
+  if (state.stage === "done") {
+    return (
+      <Review
+        key={String(fresh)}
+        report={state.report}
+        startFen={state.startFen}
+        shared={state.shared}
+        onReanalyze={() => {
+          setState({ stage: "engine", done: 0, total: 0 });
+          setFresh(true);
+        }}
+      />
+    );
+  }
 
   return (
     <main className="grid min-h-dvh place-items-center p-6">

@@ -52,6 +52,12 @@ def test_add_coach_uses_ai_text():
     assert "coach" not in r["moves"][1]
 
 
+def test_add_coach_without_ai_uses_facts():
+    r = report([move(18, "blunder", ["Nf6 leaves the queen on d4 hanging"])])
+    asyncio.run(add_coach(r, None))
+    assert r["moves"][0]["coach"] == "Nf6 leaves the queen on d4 hanging."
+
+
 def test_add_coach_falls_back_to_facts_when_ai_fails():
     r = report([move(18, "blunder", ["Nf6 leaves the queen on d4 hanging"]), move(20, "mistake")])
 

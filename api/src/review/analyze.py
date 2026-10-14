@@ -45,6 +45,8 @@ class AnalyzeRequest(BaseModel):
     pgn: str = Field(max_length=50_000)
     # Omitted on the first request: the client only runs Stockfish if no cached review exists.
     evals: list[PositionEval] | None = Field(None, max_length=MAX_PLIES + 1)
+    # Re-analysis in the user's own browser: skip the shared cache entirely, neither reading nor writing it.
+    fresh: bool = False
 
 
 class AnalysisError(ValueError):

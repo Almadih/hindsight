@@ -109,17 +109,24 @@ def parse_comments(raw, plies: set[int]) -> dict[int, str]:
 
 
 async def add_coach(report: dict, run_ai) -> None:
-    """Set `coach` on key moves in place. Never raises: a failed AI call just means fact-based comments."""
+    """Set `coach` on key moves in place. Never raises: a failed AI call just means fact-based comments.
+
+    Pass run_ai=None to skip the AI entirely (daily budget used up, or a private re-analysis).
+    """
     moves = key_moves(report["moves"])
     if not moves:
         return
+    comments = {}
     try:
+        if run_ai is None:
+            raise LookupError("AI skipped")
         raw = await run_ai(MODEL, {"messages": build_messages(report, moves), "response_format": RESPONSE_FORMAT, "max_tokens": 900})
         comments = parse_comments(raw, {m["ply"] for m in moves})
         if not comments:
             logging.warning("coach: AI reply had no usable comments: %.500r", raw)
+    except LookupError:
+        pass
     except Exception as e:  # noqa: BLE001 - the coach is optional; the review must still be returned
         logging.warning("coach: AI call failed, using fact-based comments: %r", e)
-        comments = {}
     for m in moves:
         m["coach"] = comments.get(m["ply"]) or fallback(m) or None

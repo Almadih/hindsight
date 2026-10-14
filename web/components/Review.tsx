@@ -19,7 +19,15 @@ type Tab = "summary" | "moves";
 const LINE_STEP_MS = 700;
 const GAME: Mode = { kind: "game" };
 
-export function Review({ report, startFen }: { report: Report; startFen: string }) {
+type Props = {
+  report: Report;
+  startFen: string;
+  /** Came from the shared cache (someone else's browser analyzed it), so offer a private re-check. */
+  shared: boolean;
+  onReanalyze: () => void;
+};
+
+export function Review({ report, startFen, shared, onReanalyze }: Props) {
   const [ply, setPly] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [tab, setTab] = useState<Tab>("summary");
@@ -107,6 +115,18 @@ export function Review({ report, startFen }: { report: Report; startFen: string 
             <p className="truncate text-sm text-muted">
               {headers.Result && headers.Result !== "*" ? `${headers.Result} · ` : ""}
               {report.opening ?? "Unknown opening"}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {shared ? (
+                <>
+                  Shared review ·{" "}
+                  <button onClick={onReanalyze} className="font-semibold text-fg underline decoration-line underline-offset-2 hover:decoration-fg">
+                    Re-analyze in my browser
+                  </button>
+                </>
+              ) : (
+                "Analyzed in your browser"
+              )}
             </p>
           </div>
           <Link href="/" className="rounded p-1.5 text-muted hover:bg-raised hover:text-fg" aria-label="Review another game" title="Review another game">

@@ -5,8 +5,8 @@
 
 import json
 
-# shortcut: no contact info; Chess.com asks for an email/URL in the UA, add one before going public.
-USER_AGENT = "chess-game-review/0.1"
+# Chess.com asks API clients to identify themselves with a way to reach them.
+USER_AGENT = "chess-game-review/0.2 (+https://chess-review.almadih.workers.dev)"
 MAX_GAMES = 30
 
 

@@ -1,16 +1,18 @@
 import json
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Path
+from fastapi import FastAPI, HTTPException, Path, Request
 from workers import fetch
 from workers.asgi import entrypoint, env
 
 from review.analyze import AnalysisError, AnalyzeRequest, analyze, parse_game
 from review.coach import add_coach
 from review.fetchers import UpstreamError, fetch_games
-from review.store import get_review, put_review
+from review.store import get_review, put_review, reviews_last_day
 
 GAMES_TTL = 300  # seconds a fetched game list stays in KV
+# Hard ceiling on coach AI calls per rolling day; past it, reviews still work with fact-based comments.
+AI_DAILY_CAP = 300
 
 app = FastAPI()
 
@@ -34,18 +36,27 @@ async def games(platform: Literal["chesscom", "lichess"], username: str = Path(p
 
 
 @app.post("/api/analyze")
-async def analyze_game(req: AnalyzeRequest, env=env):
+async def analyze_game(req: AnalyzeRequest, request: Request, env=env):
     try:
         parsed = parse_game(req.pgn)
-        if cached := await get_review(env.DB, parsed.hash):
+        if not req.fresh and (cached := await get_review(env.DB, parsed.hash)):
             return cached
         if req.evals is None:
             raise HTTPException(404, "not analyzed yet")
+        # Only new analyses cost anything (CPU, and an AI call for shared ones), so only they are limited.
+        outcome = await env.ANALYZE_LIMIT.limit({"key": request.headers.get("cf-connecting-ip", "unknown")})
+        if not outcome["success"]:
+            raise HTTPException(429, "Too many new analyses from your connection. Try again in a minute.")
         report = analyze(parsed, req.evals)
     except AnalysisError as e:
         raise HTTPException(422, str(e)) from e
 
-    await add_coach(report, lambda model, inputs: env.AI.run(model, inputs))
+    if req.fresh:
+        # Private re-analysis: no AI spend, and the shared copy is never touched.
+        await add_coach(report, None)
+        return report
+    use_ai = await reviews_last_day(env.DB) < AI_DAILY_CAP
+    await add_coach(report, (lambda model, inputs: env.AI.run(model, inputs)) if use_ai else None)
     await put_review(env.DB, report, req.pgn)
     return report
 
