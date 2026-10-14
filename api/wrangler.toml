@@ -8,17 +8,16 @@ compatibility_flags = ["python_workers"]
 directory = "../web/out"
 run_worker_first = ["/api/*"]
 
-# Shared review cache. Local dev uses a local SQLite copy; replace the placeholder ids with real ones
-# (`wrangler d1 create chess-review`, `wrangler kv namespace create CACHE`) before deploying.
+# Shared review cache. `pywrangler dev` uses a local SQLite copy; deploys use the real database.
 [[d1_databases]]
 binding = "DB"
 database_name = "chess-review"
-database_id = "local-placeholder"
+database_id = "e3165f9e-68d2-4930-8a07-62134d0c5644"
 
 # Short-lived cache for Chess.com / Lichess game lists.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "local-placeholder"
+id = "29616266b5914ba6b52a582343358631"
 
 # Coach comments. Workers AI always runs remotely, even under `pywrangler dev`, and is billed to the account.
 [ai]
