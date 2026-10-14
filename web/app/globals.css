@@ -240,7 +240,18 @@ progress {
   animation: fx-card-flash 900ms ease-out both;
 }
 
+/* Accuracy rings fill from empty when a review opens. */
+@keyframes ring-fill {
+  from {
+    stroke-dasharray: 0 999;
+  }
+}
+.ring-fill {
+  animation: ring-fill 1100ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ring-fill,
   .badge-pop,
   .badge-slam,
   .fx-rise,

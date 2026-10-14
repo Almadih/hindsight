@@ -5,12 +5,13 @@ import { Chess } from "chess.js";
  * Send the re-export to the API: python-chess is stricter about layout (e.g. tags on one line),
  * and this guarantees both sides replay the exact game the engine analyzed. Throws on invalid PGN.
  */
-export function parsePgn(input: string): { pgn: string; fens: string[] } {
+export function parsePgn(input: string): { pgn: string; fens: string[]; sans: string[]; headers: Record<string, string> } {
   const chess = new Chess();
   chess.loadPgn(input);
   const moves = chess.history({ verbose: true });
   if (!moves.length) throw new Error("PGN has no moves");
-  return { pgn: chess.pgn(), fens: [moves[0].before, ...moves.map((m) => m.after)] };
+  const headers = Object.fromEntries(Object.entries(chess.getHeaders()).filter(([, v]) => v != null)) as Record<string, string>;
+  return { pgn: chess.pgn(), fens: [moves[0].before, ...moves.map((m) => m.after)], sans: moves.map((m) => m.san), headers };
 }
 
 export const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

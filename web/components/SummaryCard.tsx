@@ -23,6 +23,7 @@ function AccuracyRing({ value, side }: { value: number | null; side: Side }) {
         strokeWidth="6"
         strokeLinecap="round"
         strokeDasharray={`${((value ?? 0) / 100) * c} ${c}`}
+        className="ring-fill"
         transform="rotate(-90 32 32)"
       />
       <text x="32" y="33" textAnchor="middle" dominantBaseline="central" fill="#eceae6" fontSize="15" fontWeight="700" className="tabular-nums">
@@ -54,11 +55,12 @@ export function SummaryCard({ report, names }: { report: Report; names: Record<S
       <table className="w-full">
         <caption className="sr-only">Move classifications</caption>
         <tbody>
-          {BADGE_ORDER.map((b) => {
+          {BADGE_ORDER.map((b, i) => {
             const w = counts.white[b] ?? 0;
             const k = counts.black[b] ?? 0;
             return (
-              <tr key={b} className={w || k ? "" : "opacity-45"}>
+              // Rows rise in one after another when the verdicts arrive (35ms apart, 350ms in all).
+              <tr key={b} className={`fx-rise ${w || k ? "" : "opacity-45"}`} style={{ animationDelay: `${i * 35}ms` }}>
                 <td className="w-12 py-1 text-center font-semibold tabular-nums" style={{ color: w ? BADGE[b].color : undefined }}>{w}</td>
                 <th scope="row" className="py-1 font-normal">
                   <span className="flex items-center justify-center gap-2">

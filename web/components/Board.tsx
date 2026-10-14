@@ -26,10 +26,12 @@ type Props = {
   fx?: { intensity: FxIntensity; prevFen: string };
   /** Unique per page when several boards are shown. */
   id?: string;
+  /** An engine suggestion to draw when there is no reviewed move (the live analysis screen). */
+  hintUci?: string;
 };
 
 /** Board at one ply: the played move tinted by its badge, badge on the target square, best move as an arrow. */
-export function Board({ fen, flipped, move, onMove, fx, id = "review-board" }: Props) {
+export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hintUci }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const from = move?.uci.slice(0, 2);
   const to = move?.uci.slice(2, 4);
@@ -73,7 +75,11 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board" }: P
           lightSquareStyle: LIGHT,
           darkSquareStyle: DARK,
           arrowOptions: ARROWS,
-          arrows: showBest ? [{ startSquare: move.bestUci!.slice(0, 2), endSquare: move.bestUci!.slice(2, 4), color: BEST_ARROW }] : [],
+          arrows: showBest
+            ? [{ startSquare: move.bestUci!.slice(0, 2), endSquare: move.bestUci!.slice(2, 4), color: BEST_ARROW }]
+            : !move && hintUci
+              ? [{ startSquare: hintUci.slice(0, 2), endSquare: hintUci.slice(2, 4), color: BEST_ARROW }]
+              : [],
           // A custom squareRenderer replaces the wrapper that would apply `squareStyles`, so tint here instead.
           squareRenderer: ({ square, children }) => (
             <div className="relative size-full" style={tint && (square === from || square === to) ? tint : undefined}>

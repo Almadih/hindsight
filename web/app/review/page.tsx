@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AnalysisLive } from "@/components/AnalysisLive";
 import { Review } from "@/components/Review";
 import { analyzeGame, cachedReview, getReview } from "@/lib/api";
-import { analyzePositions } from "@/lib/engine/pool";
+import { analyzePositions, type PositionEval } from "@/lib/engine/pool";
 import { parsePgn, reportPgn, START_FEN } from "@/lib/pgn";
 import type { Report } from "@/lib/types";
 
 type State =
   | { stage: "lookup" }
-  | { stage: "engine"; done: number; total: number }
-  | { stage: "server" }
+  | { stage: "engine" | "server"; game: { fens: string[]; sans: string[]; headers: Record<string, string> }; evals: (PositionEval | undefined)[] }
   // shared: came from the shared store, not this browser's engine. linkable: stored, so /review?g=<hash> opens it.
   | { stage: "done"; report: Report; startFen: string; shared: boolean; linkable: boolean }
   | { stage: "error"; message: string };
@@ -37,17 +37,22 @@ export default function ReviewPage() {
 
         const input = sessionStorage.getItem("pgn");
         if (!input) throw new Error("No game to review yet. Pick a game or paste a PGN first.");
-        const { pgn, fens } = parsePgn(input);
+        const { pgn, fens, sans, headers } = parsePgn(input);
+        const game = { fens, sans, headers };
         // Someone may already have reviewed this exact game: skip the engine entirely.
         const cached = fresh ? null : await cachedReview(pgn);
         if (cached) return setState({ stage: "done", report: cached, startFen: fens[0], shared: true, linkable: true });
         if (ctrl.signal.aborted) return;
-        setState({ stage: "engine", done: 0, total: fens.length });
+        const live: (PositionEval | undefined)[] = new Array(fens.length);
+        setState({ stage: "engine", game, evals: [...live] });
         const evals = await analyzePositions(fens, {
           signal: ctrl.signal,
-          onProgress: (done, total) => setState({ stage: "engine", done, total }),
+          onPosition: (i, ev) => {
+            live[i] = ev;
+            setState({ stage: "engine", game, evals: [...live] });
+          },
         });
-        setState({ stage: "server" });
+        setState({ stage: "server", game, evals });
         // Fresh re-analyses are private: never stored, so they get no link.
         setState({ stage: "done", report: await analyzeGame(pgn, evals, fresh), startFen: fens[0], shared: false, linkable: !fresh });
       } catch (err) {
@@ -72,11 +77,15 @@ export default function ReviewPage() {
         shared={state.shared}
         shareUrl={state.linkable ? `${location.origin}/review?g=${state.report.hash}` : undefined}
         onReanalyze={() => {
-          setState({ stage: "engine", done: 0, total: 0 });
+          setState({ stage: "lookup" });
           setFresh(true);
         }}
       />
     );
+  }
+
+  if (state.stage === "engine" || state.stage === "server") {
+    return <AnalysisLive {...state.game} evals={state.evals} classifying={state.stage === "server"} />;
   }
 
   return (
@@ -92,20 +101,8 @@ export default function ReviewPage() {
           </>
         ) : (
           <>
-            <p className="font-semibold">{
-                { lookup: "Looking for an existing review…", engine: "Analyzing with Stockfish…", server: "Classifying moves and writing coach notes…" }[
-                  state.stage
-                ]
-              }</p>
-            <progress
-              className="h-2 w-full"
-              aria-label="Analysis progress"
-              value={state.stage === "engine" ? state.done : state.stage === "server" ? 1 : undefined}
-              max={state.stage === "engine" ? state.total || 1 : 1}
-            />
-            <p className="text-sm text-muted tabular-nums">
-              {state.stage === "engine" && state.total > 0 ? `${state.done} of ${state.total} positions` : " "}
-            </p>
+            <p className="font-semibold">Looking for an existing review…</p>
+            <progress className="h-2 w-full" aria-label="Looking for an existing review" />
           </>
         )}
       </div>

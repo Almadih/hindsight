@@ -60,9 +60,16 @@ class Engine {
 /** Evaluate every position across a small worker pool. Results keep the input order. */
 export async function analyzePositions(
   fens: string[],
-  opts: { depth?: number; multiPv?: number; onProgress?: (done: number, total: number) => void; signal?: AbortSignal } = {},
+  opts: {
+    depth?: number;
+    multiPv?: number;
+    onProgress?: (done: number, total: number) => void;
+    /** Each position as it finishes; workers finish out of order. */
+    onPosition?: (index: number, ev: PositionEval) => void;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<PositionEval[]> {
-  const { depth = 16, multiPv = 3, onProgress, signal } = opts;
+  const { depth = 16, multiPv = 3, onProgress, onPosition, signal } = opts;
   signal?.throwIfAborted();
   const size = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1, fens.length));
   const engines = Array.from({ length: size }, () => new Engine());
@@ -79,6 +86,7 @@ export async function analyzePositions(
         while (next < fens.length) {
           const i = next++;
           results[i] = { fen: fens[i], lines: await engine.evaluate(fens[i], depth) };
+          onPosition?.(i, results[i]);
           onProgress?.(++done, fens.length);
         }
       }),
