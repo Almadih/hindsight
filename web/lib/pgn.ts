@@ -1,0 +1,14 @@
+import { Chess } from "chess.js";
+
+/**
+ * Parse a PGN into the FEN of every position (start, then one per ply) plus chess.js's re-exported PGN.
+ * Send the re-export to the API: python-chess is stricter about layout (e.g. tags on one line),
+ * and this guarantees both sides replay the exact game the engine analyzed. Throws on invalid PGN.
+ */
+export function parsePgn(input: string): { pgn: string; fens: string[] } {
+  const chess = new Chess();
+  chess.loadPgn(input);
+  const moves = chess.history({ verbose: true });
+  if (!moves.length) throw new Error("PGN has no moves");
+  return { pgn: chess.pgn(), fens: [moves[0].before, ...moves.map((m) => m.after)] };
+}

@@ -1,0 +1,15 @@
+# Python Worker (api/)
+api/.venv/
+api/.venv-workers/
+api/.wrangler/
+api/python_modules/
+.pytest_cache/
+__pycache__/
+
+# Installed agent tooling: restore from skills-lock.json; local settings stay local
+.agents/skills/
+.claude/skills/
+.claude/agents/
+*.local.json
+
+.DS_Store

@@ -1,0 +1,11 @@
+[project]
+name = "chess-review-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi", "chess"]
+
+[dependency-groups]
+dev = ["workers-py", "workers-runtime-sdk", "pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
