@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;background:#1c1b19;color:#eceae6;font-family:system-ui,sans-serif;overflow:hidden;position:relative}
+.nav{position:absolute;top:28px;left:56px;right:56px;display:flex;justify-content:space-between;font-size:15px}
+h1{position:absolute;top:110px;left:56px;font-size:88px;line-height:.95;letter-spacing:-.03em;font-weight:800;width:900px}
+.ask{position:absolute;top:330px;left:56px;display:flex;gap:10px}.ask .in{width:420px;height:64px;border-radius:10px;background:#262421;border:2px solid #3d3a35}.ask .go{width:200px;height:64px;border-radius:10px;background:#81b64c}
+.band{position:absolute;left:0;right:0;top:460px;height:400px;display:grid;grid-template-columns:1fr 520px 1fr;align-items:center}
+.pgn{height:340px;padding:0 40px 0 56px;font:22px/1.5 ui-monospace,monospace;color:#6b665f;overflow:hidden;mask:linear-gradient(90deg,#000 55%,transparent)}
+.board{width:400px;height:400px;margin:auto;display:grid;grid-template:repeat(8,1fr)/repeat(8,1fr);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.board i:nth-child(odd){background:#ebecd0}.board i:nth-child(even){background:#739552}
+.list{height:340px;padding:0 56px 0 40px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:700}.dot{width:30px;height:30px;border-radius:50%}
+</style></head><body>
+<div class="nav"><b>Hindsight</b><span>Free · No account</span></div>
+<h1>Paste the game. Get the hindsight.</h1>
+<div class="ask"><div class="in"></div><div class="go"></div></div>
+<div class="band">
+ <div class="pgn">1.e4 e5 2.Nf3 d6 3.d4 Bg4 4.dxe5 Bxf3 5.Qxf3 dxe5 6.Bc4 Nf6 7.Qb3 Qe7 8.Nc3 c6 9.Bg5 b5 10.Nxb5 cxb5 11.Bxb5+ Nbd7 12.O-O-O Rd8 13.Rxd7 Rxd7 14.Rd1 Qe6 15.Bxd7+ Nxd7 16.Qb8+ Nxb8 17.Rd8#</div>
+ <div class="board"><script>document.write('<i></i>'.repeat(64))</script></div>
+ <div class="list">
+  <div class="row"><span class="dot" style="background:#ffa459"></span>9… b5 — mistake</div>
+  <div class="row"><span class="dot" style="background:#26c2a3"></span>10. Nxb5 — brilliant</div>
+  <div class="row"><span class="dot" style="background:#fa412d"></span>15… Nxd7 — blunder</div>
+  <div class="row"><span class="dot" style="background:#749bbf"></span>17. Rd8# — great</div>
+ </div>
+</div></body></html>

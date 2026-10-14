@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;background:#1c1b19;color:#eceae6;font-family:system-ui,sans-serif;overflow:hidden;position:relative}
+.board{position:absolute;left:300px;top:40px;width:820px;height:820px;display:grid;grid-template:repeat(8,1fr)/repeat(8,1fr);box-shadow:0 30px 90px rgba(0,0,0,.6)}
+.board i:nth-child(16n+1),.board i:nth-child(16n+3),.board i:nth-child(16n+5),.board i:nth-child(16n+7),.board i:nth-child(16n+10),.board i:nth-child(16n+12),.board i:nth-child(16n+14),.board i:nth-child(16n+16){background:#ebecd0}.board i{background:#739552}
+.bar{position:absolute;left:250px;top:40px;width:34px;height:820px;background:#403d39}.bar div{position:absolute;bottom:0;width:100%;height:78%;background:#f1efea}
+.badge{position:absolute;left:470px;top:-6px;width:90px;height:90px;border-radius:50%;background:#26c2a3;box-shadow:0 6px 16px rgba(0,0,0,.5);font:900 44px/90px system-ui;text-align:center;color:#141311}
+h1{position:absolute;left:56px;top:56px;width:200px;font-size:30px;font-weight:800}
+.coach{position:absolute;right:56px;top:90px;width:260px;padding:20px;border-radius:12px;background:#312e2a;font-size:26px;font-weight:700}
+.player{position:absolute;left:300px;top:862px;width:820px;height:0}
+.ask{position:absolute;left:330px;bottom:70px;width:760px;height:96px;border-radius:14px;background:rgba(28,27,25,.92);display:flex;gap:12px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.6)}.ask .in{flex:1;border-radius:10px;border:2px solid #3d3a35}.ask .go{width:220px;border-radius:10px;background:#81b64c}
+.big{position:absolute;right:56px;bottom:200px;width:260px;font-size:64px;font-weight:800;line-height:.95;letter-spacing:-.03em}
+</style></head><body>
+<h1>Hindsight</h1>
+<div class="bar"><div></div></div>
+<div class="board"><script>document.write('<i></i>'.repeat(64))</script><div class="badge">!!</div></div>
+<div class="coach">10. Nxb5 is brilliant</div>
+<div class="big">Every move, judged.</div>
+<div class="ask"><div class="in"></div><div class="go"></div></div>
+</body></html>

@@ -2,12 +2,15 @@
 
 import { Area, AreaChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BADGE, NOTABLE, whiteWinPct } from "@/lib/review";
-import type { Report } from "@/lib/types";
+import type { ReviewMove, WhiteEval } from "@/lib/types";
+
+/** Just what the graph reads, so the landing page's baked demo game fits too. */
+type GraphData = { start: WhiteEval; moves: Pick<ReviewMove, "ply" | "badge" | "evalWhite" | "mateWhite">[] };
 
 type Point = { ply: number; w: number; color?: string };
 
 /** White's win% across the game; click to jump to a ply. Notable moves get a dot in their badge colour. */
-export function EvalGraph({ report, ply, onSelect }: { report: Report; ply: number; onSelect: (ply: number) => void }) {
+export function EvalGraph({ report, ply, onSelect, className = "h-24" }: { report: GraphData; ply: number; onSelect: (ply: number) => void; className?: string }) {
   const data: Point[] = [
     { ply: 0, w: whiteWinPct(report.start) },
     ...report.moves.map((m) => ({
@@ -18,7 +21,7 @@ export function EvalGraph({ report, ply, onSelect }: { report: Report; ply: numb
   ];
 
   return (
-    <div className="h-24 overflow-hidden rounded-md bg-[#403d39]">
+    <div className={`${className} overflow-hidden rounded-md bg-[#403d39]`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}

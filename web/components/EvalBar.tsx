@@ -18,7 +18,7 @@ export function EvalBar({ ev, flipped }: { ev: WhiteEval; flipped: boolean }) {
       aria-valuetext={formatEval(ev)}
       className={`relative flex w-7 shrink-0 overflow-hidden rounded-[3px] bg-[#403d39] ${flipped ? "flex-col" : "flex-col-reverse"}`}
     >
-      <div className="bg-[#f1efea] transition-[height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" style={{ height: `${white}%` }} />
+      <div className="bg-[#f1efea] transition-[height] duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none" style={{ height: `${white}%` }} />
       <span
         className={`absolute inset-x-0 text-center text-[10px] font-semibold tabular-nums ${labelAtBottom ? "bottom-1" : "top-1"} ${
           whiteAhead ? "text-[#2b2926]" : "text-[#f1efea]"

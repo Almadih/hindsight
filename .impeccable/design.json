@@ -1,0 +1,649 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T17:29:44+00:00",
+  "title": "Design System: Hindsight",
+  "extensions": {
+    "colorMeta": {
+      "graphite-ground": {
+        "role": "neutral",
+        "displayName": "Graphite Ground",
+        "canonical": "#1c1b19",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262523",
+          "#434240",
+          "#62615f",
+          "#838280",
+          "#a6a5a2",
+          "#cac9c6",
+          "#f0eeeb"
+        ]
+      },
+      "graphite-surface": {
+        "role": "neutral",
+        "displayName": "Graphite Surface",
+        "canonical": "#262421",
+        "tonalRamp": [
+          "#0d0b08",
+          "#272522",
+          "#44423e",
+          "#63615d",
+          "#84827e",
+          "#a7a5a1",
+          "#cbc9c5",
+          "#f1eeea"
+        ]
+      },
+      "graphite-raised": {
+        "role": "neutral",
+        "displayName": "Graphite Raised",
+        "canonical": "#312e2a",
+        "tonalRamp": [
+          "#0d0b08",
+          "#272521",
+          "#45413d",
+          "#64615c",
+          "#85827d",
+          "#a8a49f",
+          "#ccc8c3",
+          "#f2eee8"
+        ]
+      },
+      "graphite-line": {
+        "role": "neutral",
+        "displayName": "Graphite Line",
+        "canonical": "#3d3a35",
+        "tonalRamp": [
+          "#0d0b07",
+          "#272520",
+          "#45423c",
+          "#64615b",
+          "#85827c",
+          "#a8a49f",
+          "#ccc9c2",
+          "#f2eee8"
+        ]
+      },
+      "bone-text": {
+        "role": "neutral",
+        "displayName": "Bone",
+        "canonical": "#eceae6",
+        "tonalRamp": [
+          "#0c0b08",
+          "#262522",
+          "#43423f",
+          "#63615e",
+          "#84827e",
+          "#a7a5a1",
+          "#cbc9c5",
+          "#f0eeea"
+        ]
+      },
+      "ash-muted": {
+        "role": "neutral",
+        "displayName": "Ash",
+        "canonical": "#a8a39b",
+        "tonalRamp": [
+          "#0e0b06",
+          "#28241e",
+          "#46413a",
+          "#656159",
+          "#86827a",
+          "#a9a49c",
+          "#cec8c0",
+          "#f3eee5"
+        ]
+      },
+      "board-green-accent": {
+        "role": "primary",
+        "displayName": "Board Green",
+        "canonical": "#81b64c",
+        "tonalRamp": [
+          "#050e00",
+          "#182c01",
+          "#2e4c09",
+          "#447005",
+          "#619426",
+          "#83b84e",
+          "#a6dd73",
+          "#d4feb2"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "canonical": "#141311",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262523",
+          "#43423f",
+          "#62615e",
+          "#83827f",
+          "#a6a5a2",
+          "#cac9c6",
+          "#f0eeeb"
+        ]
+      },
+      "danger": {
+        "role": "error",
+        "displayName": "Danger",
+        "canonical": "#ff7769",
+        "tonalRamp": [
+          "#1e0101",
+          "#4a0605",
+          "#800408",
+          "#ac2923",
+          "#d45045",
+          "#fd7567",
+          "#feb3a9",
+          "#fee9e6"
+        ]
+      },
+      "board-light": {
+        "role": "tertiary",
+        "displayName": "Board Cream",
+        "canonical": "#ebecd0",
+        "tonalRamp": [
+          "#0c0c00",
+          "#262610",
+          "#43442d",
+          "#63634b",
+          "#84846b",
+          "#a6a78d",
+          "#cbccb0",
+          "#f0f1d5"
+        ]
+      },
+      "board-dark": {
+        "role": "tertiary",
+        "displayName": "Board Green Dark",
+        "canonical": "#739552",
+        "tonalRamp": [
+          "#060e00",
+          "#192b04",
+          "#2e4c02",
+          "#4d6d2a",
+          "#6d8f4c",
+          "#8fb26e",
+          "#b2d791",
+          "#d7fdb5"
+        ]
+      },
+      "eval-white": {
+        "role": "tertiary",
+        "displayName": "Eval White",
+        "canonical": "#f1efea",
+        "tonalRamp": [
+          "#0c0b08",
+          "#262521",
+          "#43423e",
+          "#63615d",
+          "#84827e",
+          "#a7a5a0",
+          "#cbc9c4",
+          "#f0eee9"
+        ]
+      },
+      "eval-track": {
+        "role": "tertiary",
+        "displayName": "Eval Track",
+        "canonical": "#403d39",
+        "tonalRamp": [
+          "#0d0b08",
+          "#272521",
+          "#44413d",
+          "#64615c",
+          "#85827d",
+          "#a8a4a0",
+          "#ccc8c4",
+          "#f2eee9"
+        ]
+      },
+      "move-current": {
+        "role": "neutral",
+        "displayName": "Move Current",
+        "canonical": "#4b4844",
+        "tonalRamp": [
+          "#0d0b08",
+          "#272521",
+          "#44413e",
+          "#64615c",
+          "#85827d",
+          "#a8a4a0",
+          "#ccc8c4",
+          "#f2eee9"
+        ]
+      },
+      "badge-brilliant": {
+        "role": "secondary",
+        "displayName": "Brilliant Verdict",
+        "canonical": "#26c2a3",
+        "tonalRamp": [
+          "#010f0a",
+          "#052c24",
+          "#054e40",
+          "#18715e",
+          "#22977f",
+          "#20bfa0",
+          "#57e5c4",
+          "#befeec"
+        ]
+      },
+      "badge-great": {
+        "role": "secondary",
+        "displayName": "Great Verdict",
+        "canonical": "#749bbf",
+        "tonalRamp": [
+          "#000c1b",
+          "#002744",
+          "#204564",
+          "#406586",
+          "#6087aa",
+          "#82aace",
+          "#a5cef4",
+          "#e2f0fe"
+        ]
+      },
+      "badge-best": {
+        "role": "secondary",
+        "displayName": "Best Verdict",
+        "canonical": "#81b64c",
+        "tonalRamp": [
+          "#050e00",
+          "#182c01",
+          "#2e4c09",
+          "#447005",
+          "#619426",
+          "#83b84e",
+          "#a6dd73",
+          "#d4feb2"
+        ]
+      },
+      "badge-excellent": {
+        "role": "secondary",
+        "displayName": "Excellent Verdict",
+        "canonical": "#96bc4b",
+        "tonalRamp": [
+          "#080e00",
+          "#1e2a02",
+          "#374a0c",
+          "#516c0d",
+          "#6d9114",
+          "#8fb543",
+          "#b2da69",
+          "#d9ff9a"
+        ]
+      },
+      "badge-good": {
+        "role": "secondary",
+        "displayName": "Good Verdict",
+        "canonical": "#97af8b",
+        "tonalRamp": [
+          "#040f00",
+          "#182b0c",
+          "#344929",
+          "#536948",
+          "#738a68",
+          "#96ae8a",
+          "#b9d2ad",
+          "#def8d2"
+        ]
+      },
+      "badge-book": {
+        "role": "secondary",
+        "displayName": "Book Verdict",
+        "canonical": "#b39572",
+        "tonalRamp": [
+          "#130800",
+          "#352002",
+          "#563c1b",
+          "#775b3a",
+          "#9a7d5a",
+          "#be9f7c",
+          "#e3c39f",
+          "#feebd5"
+        ]
+      },
+      "badge-inaccuracy": {
+        "role": "secondary",
+        "displayName": "Inaccuracy Verdict",
+        "canonical": "#f7c631",
+        "tonalRamp": [
+          "#100a00",
+          "#2f2303",
+          "#523f01",
+          "#775e0f",
+          "#9f7e17",
+          "#ca9f0f",
+          "#f3c22b",
+          "#feedc4"
+        ]
+      },
+      "badge-mistake": {
+        "role": "secondary",
+        "displayName": "Mistake Verdict",
+        "canonical": "#ffa459",
+        "tonalRamp": [
+          "#160700",
+          "#3a1c02",
+          "#62350a",
+          "#904e09",
+          "#bf690f",
+          "#e58c40",
+          "#fcb985",
+          "#feeadc"
+        ]
+      },
+      "badge-miss": {
+        "role": "secondary",
+        "displayName": "Miss Verdict",
+        "canonical": "#ff7769",
+        "tonalRamp": [
+          "#1e0101",
+          "#4a0605",
+          "#800408",
+          "#ac2923",
+          "#d45045",
+          "#fd7567",
+          "#feb3a9",
+          "#fee9e6"
+        ]
+      },
+      "badge-blunder": {
+        "role": "secondary",
+        "displayName": "Blunder Verdict",
+        "canonical": "#fa412d",
+        "tonalRamp": [
+          "#1e0100",
+          "#490804",
+          "#7e0c03",
+          "#b12113",
+          "#ea2e1c",
+          "#fa7865",
+          "#fdb4a8",
+          "#ffe9e5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Landing headline and closing call to action only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Landing section heads."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "'Hindsight', top-left, as text."
+      },
+      "title": {
+        "displayName": "Verdict Title",
+        "purpose": "Verdict lines in coach card and turning-point captions."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Muted section intros, 34-52ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Coach notes and rules."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Controls, meta, eval chip; tabular numerals."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "PGN textarea only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "board-landing",
+        "value": "0 24px 70px rgba(0,0,0,0.5)",
+        "purpose": "Landing replay board."
+      },
+      {
+        "name": "board-review",
+        "value": "0 6px 24px rgba(0,0,0,0.35)",
+        "purpose": "Review board."
+      },
+      {
+        "name": "dock-float",
+        "value": "0 18px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08)",
+        "purpose": "Game finder riding the board."
+      },
+      {
+        "name": "stamp",
+        "value": "0 12px 40px rgba(0,0,0,0.5)",
+        "purpose": "Checkmate stamp."
+      },
+      {
+        "name": "verdict-flash",
+        "value": "0 0 0 3px var(--fx), 0 0 40px color-mix(in srgb, var(--fx) 45%, transparent)",
+        "purpose": "Coach card flash keyframe start; never at rest."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "badge-pop, impact rings, sparks, coach-line rise."
+      },
+      {
+        "name": "ease-slam",
+        "value": "cubic-bezier(0.2, 0.9, 0.3, 1)",
+        "purpose": "badge-slam and the Checkmate stamp."
+      },
+      {
+        "name": "ease-eval-overshoot",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Eval bar swing, 700ms."
+      },
+      {
+        "name": "badge-pop",
+        "value": "320ms ease-out-expo, scale 0.35 to 1",
+        "purpose": "Subtle tier: badge landing on the review page and coach card."
+      },
+      {
+        "name": "badge-slam",
+        "value": "560ms ease-slam, from translateY(-70%) scale(2.6) rotate(-24deg)",
+        "purpose": "Epic tier: badge landing on the landing replay."
+      },
+      {
+        "name": "fx-impact",
+        "value": "640ms (soft 420ms at 0.7 opacity; late ring +140ms, 900ms)",
+        "purpose": "Verdict-coloured ring on the target square."
+      },
+      {
+        "name": "fx-flash / fx-trail / fx-shatter",
+        "value": "420ms / 500ms / 520ms",
+        "purpose": "Square flash, origin trail (epic), captured-piece shatter."
+      },
+      {
+        "name": "fx-sweep + fx-spark",
+        "value": "900ms sweep (120ms delay), 12 sparks 760ms",
+        "purpose": "Epic tier, Brilliant and Great only."
+      },
+      {
+        "name": "board-shake",
+        "value": "WAAPI 460ms, amplitude x1 blunder / 0.7 miss / 0.55 mistake",
+        "purpose": "Epic tier bad verdicts; board never remounts."
+      },
+      {
+        "name": "fx-check / fx-mate",
+        "value": "900ms red pulse (rgb 250 65 45); mate adds 500ms dim and 620ms stamp at 450ms",
+        "purpose": "Check and mate on the victim king."
+      },
+      {
+        "name": "fx-rise / fx-card-flash",
+        "value": "380ms rise 14px (note +70ms); 900ms ring and glow in --fx",
+        "purpose": "Coach card per move; flash on non-quiet verdicts."
+      },
+      {
+        "name": "piece-move",
+        "value": "260ms epic / 180ms subtle",
+        "purpose": "react-chessboard piece animation."
+      },
+      {
+        "name": "replay-tempo",
+        "value": "book 520ms, ordinary 820ms, key 3400ms, end 5600ms",
+        "purpose": "Landing autoplay holds; pauses on hover or focus; still frame Qb8+ on reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Stops badge and card animations, hides every fx-* layer, freezes the eval bar."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ],
+    "sound": {
+      "default": "off every visit; the toggle click primes audio",
+      "source": "Pixabay (public/sfx/LICENSE.md)",
+      "mapping": {
+        "move": "click-soft 0.5",
+        "capture": "click 0.7",
+        "check": "ping 0.45 +90ms",
+        "brilliant/great": "sparkle 0.5 +140ms",
+        "blunder/mistake/miss": "impact-bass-1 0.55 +100ms",
+        "mate": "impact-bass-2 0.7 +120ms, chime 0.45 +450ms"
+      }
+    },
+    "assets": {
+      "pieces": "Staunty by sadsnake1, CC BY-NC-SA 4.0 (public/pieces/staunty/LICENSE.md), credited in footer",
+      "prohibited": "Chess.com piece art and icons are never copied"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action: Board Green with near-black ink; brightens on hover.",
+      "html": "<button class=\"ds-btn-primary\">Review my games</button>",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-btn-primary{background:var(--accent);color:#141311;font-weight:700;font-size:1rem;padding:12px 24px;border:0;border-radius:8px;cursor:pointer;transition:filter .15s} .ds-btn-primary:hover{filter:brightness(1.1)} .ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px} .ds-btn-primary:disabled{opacity:.6}"
+    },
+    {
+      "name": "Sound Toggle",
+      "kind": "button",
+      "refersTo": "button-pill-toggle",
+      "description": "Opt-in sound pill; off on every visit.",
+      "html": "<button class=\"ds-pill\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 5 6 9H3v6h3l5 4zM16 9.5l5 5M21 9.5l-5 5\"/></svg>Sound off</button>",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-pill{display:inline-flex;align-items:center;gap:8px;background:var(--raised);color:var(--muted);font:600 .875rem/1 Geist,system-ui,sans-serif;padding:6px 12px;border:0;border-radius:9999px;cursor:pointer} .ds-pill:hover,.ds-pill[aria-pressed=true]{color:var(--fg)} .ds-pill:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Username Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Surface field; border and outline turn Board Green on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Your Chess.com username\">",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-input{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:1rem;caret-color:var(--accent);min-width:260px} .ds-input::placeholder{color:var(--muted)} .ds-input:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Platform Segments",
+      "kind": "chip",
+      "refersTo": "segment-option",
+      "description": "Radio segments; selected fills Raised.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button role=\"radio\" aria-checked=\"true\">Chess.com</button><button role=\"radio\" aria-checked=\"false\">Lichess</button></div>",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-seg{display:flex;gap:4px;font:600 .875rem Geist,system-ui,sans-serif} .ds-seg button{background:none;border:0;color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font:inherit} .ds-seg button:hover{color:var(--fg)} .ds-seg button[aria-checked=true]{background:var(--raised);color:var(--fg)} .ds-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Annotation Badges",
+      "kind": "custom",
+      "refersTo": "annotation-badge",
+      "description": "Flat verdict discs with white SVG-path glyphs; no highlight, rim or shadow.",
+      "html": "<div class=\"ds-badges\"><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#26c2a3\"/><g transform=\"translate(-2.4 0) translate(10 10) scale(0.95) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g><g transform=\"translate(2.4 0) translate(10 10) scale(0.95) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#749bbf\"/><g transform=\"translate(0 0) translate(10 10) scale(1.05) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#81b64c\"/><polygon points=\"10.00,4.10 11.70,8.15 16.09,8.52 12.76,11.40 13.76,15.68 10.00,13.40 6.24,15.68 7.24,11.40 3.91,8.52 8.30,8.15\" fill=\"#fff\"/></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#97af8b\"/><polyline points=\"5.8,10.4 8.8,13.4 14.3,7.2\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#f7c631\"/><g transform=\"translate(-2.3 0) translate(10 10) scale(0.85) translate(-10 -10)\"><path d=\"M7.2 7.5a2.85 2.85 0 1 1 4.35 2.4c-1 .62-1.55 1.2-1.55 2.3v.5\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"10\" cy=\"15.3\" r=\"1.55\" fill=\"#fff\"/></g><g transform=\"translate(3.3 0) translate(10 10) scale(0.85) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#ffa459\"/><g transform=\"translate(0 0) translate(10 10) scale(1.05) translate(-10 -10)\"><path d=\"M7.2 7.5a2.85 2.85 0 1 1 4.35 2.4c-1 .62-1.55 1.2-1.55 2.3v.5\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"10\" cy=\"15.3\" r=\"1.55\" fill=\"#fff\"/></g></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#ff7769\"/><path d=\"M6.8 6.8l6.4 6.4M13.2 6.8l-6.4 6.4\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\"/></svg><svg viewBox=\"0 0 20 20\" width=\"40\" height=\"40\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#fa412d\"/><g transform=\"translate(-3 0) translate(10 10) scale(0.8) translate(-10 -10)\"><path d=\"M7.2 7.5a2.85 2.85 0 1 1 4.35 2.4c-1 .62-1.55 1.2-1.55 2.3v.5\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"10\" cy=\"15.3\" r=\"1.55\" fill=\"#fff\"/></g><g transform=\"translate(3 0) translate(10 10) scale(0.8) translate(-10 -10)\"><path d=\"M7.2 7.5a2.85 2.85 0 1 1 4.35 2.4c-1 .62-1.55 1.2-1.55 2.3v.5\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"10\" cy=\"15.3\" r=\"1.55\" fill=\"#fff\"/></g></svg></div>",
+      "css": ".ds-badges{display:flex;gap:12px;padding:12px;background:#1c1b19;border-radius:12px} .ds-badges svg{animation:ds-pop 320ms cubic-bezier(0.16,1,0.3,1)} @keyframes ds-pop{from{transform:scale(.35);opacity:0}} @media (prefers-reduced-motion:reduce){.ds-badges svg{animation:none}}"
+    },
+    {
+      "name": "Coach Card",
+      "kind": "card",
+      "refersTo": "coach-card",
+      "description": "The replay's narrator: badge, coloured verdict line, eval chip, note.",
+      "html": "<div class=\"ds-coach\" style=\"--fx:#26c2a3\"><div class=\"ds-coach-row\"><svg viewBox=\"0 0 20 20\" width=\"34\" height=\"34\" role=\"img\"><circle cx=\"10\" cy=\"10\" r=\"10\" fill=\"#26c2a3\"/><g transform=\"translate(-2.4 0) translate(10 10) scale(0.95) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g><g transform=\"translate(2.4 0) translate(10 10) scale(0.95) translate(-10 -10)\"><rect x=\"8.75\" y=\"4\" width=\"2.5\" height=\"8\" rx=\"1.25\" fill=\"#fff\"/><circle cx=\"10\" cy=\"15\" r=\"1.55\" fill=\"#fff\"/></g></svg><p class=\"ds-coach-line\"><span>16.</span> Qb8+ is brilliant</p><span class=\"ds-chip\">+9.4</span></div><p class=\"ds-coach-note\">The queen sacrifice drags the king into a mating net.</p></div>",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-coach{background:var(--raised);border-radius:12px;padding:20px;max-width:380px;animation:ds-flash 900ms ease-out both} .ds-coach-row{display:flex;align-items:center;gap:12px} .ds-coach-line{flex:1;margin:0;font-weight:700;font-size:1.25rem;color:var(--fx)} .ds-coach-line span{color:var(--fg);font-variant-numeric:tabular-nums} .ds-chip{background:var(--bg);border-radius:6px;padding:4px 8px;font-weight:700;font-size:.875rem;font-variant-numeric:tabular-nums} .ds-coach-note{margin:12px 0 0;line-height:1.625;color:rgb(236 234 230/.9)} @keyframes ds-flash{from{box-shadow:0 0 0 3px var(--fx),0 0 40px color-mix(in srgb,var(--fx) 45%,transparent)}} @media (prefers-reduced-motion:reduce){.ds-coach{animation:none}}"
+    },
+    {
+      "name": "Game Finder Dock",
+      "kind": "custom",
+      "refersTo": "game-finder-dock",
+      "description": "The input riding the board's lower ranks; the only floating panel.",
+      "html": "<div class=\"ds-dock\"><div class=\"ds-row\"><input class=\"ds-in\" placeholder=\"Your Chess.com username\"><button class=\"ds-go\">Review my games</button></div><div class=\"ds-meta\"><span>Free. No account.</span><button>or paste a PGN</button></div></div>",
+      "css": ":host{--bg:#1c1b19;--surface:#262421;--raised:#312e2a;--line:#3d3a35;--fg:#eceae6;--muted:#a8a39b;--accent:#81b64c;font-family:Geist,system-ui,sans-serif;color:var(--fg)} .ds-dock{background:rgb(28 27 25/.92);border-radius:12px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgb(255 255 255/.08);max-width:460px} .ds-row{display:flex;gap:8px} .ds-in{flex:1;min-width:0;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:12px 16px;font-size:1rem} .ds-in:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px} .ds-go{background:var(--accent);color:#141311;font-weight:700;border:0;border-radius:8px;padding:12px 24px;cursor:pointer} .ds-go:hover{filter:brightness(1.1)} .ds-meta{display:flex;justify-content:space-between;margin-top:10px;font-size:.875rem;color:var(--muted)} .ds-meta button{background:none;border:0;color:var(--muted);font:600 .875rem Geist,system-ui,sans-serif;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px;cursor:pointer} .ds-meta button:hover{color:var(--fg)}"
+    },
+    {
+      "name": "Eval Bar",
+      "kind": "custom",
+      "refersTo": "eval-bar",
+      "description": "Win-probability bar flush left of the board; swings with an overshoot ease.",
+      "html": "<div class=\"ds-eval\" role=\"meter\" aria-valuenow=\"60\"><div class=\"ds-eval-fill\"></div><span>+1.1</span></div>",
+      "css": ".ds-eval{position:relative;display:flex;flex-direction:column-reverse;width:28px;height:240px;background:#403d39;border-radius:3px;overflow:hidden} .ds-eval-fill{height:60%;background:#f1efea;transition:height 700ms cubic-bezier(0.34,1.56,0.64,1)} .ds-eval:hover .ds-eval-fill{height:35%} .ds-eval span{position:absolute;bottom:4px;inset-inline:0;text-align:center;font:600 10px Geist,system-ui,sans-serif;color:#2b2926;font-variant-numeric:tabular-nums} @media (prefers-reduced-motion:reduce){.ds-eval-fill{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Board Is the Brightest Thing in the Room",
+    "overview": "**Creative North Star: \"The Board Is the Brightest Thing in the Room\"**\n\nHindsight lives in a warm graphite room where the green-and-cream board, the Staunty pieces and the review's annotation badges carry all the light. Every surface around the board steps up in small tonal increments of the same brown-black, so the eye goes to the board, then to the verdict colour, then to the words. The type is Geist at heavy display weight with tight tracking, plain and confident, with tabular numerals wherever a number can change.\n\nThe landing page is the review screen performing: a real reviewed game replays itself, badges slam onto squares, the eval bar swings and a coach card narrates. The review page is the same world at working volume: same board, same badges, same cards, quieter motion. Density is moderate. Panels are compact and functional, and the open space belongs to the board.\n\nAnnotation badges are flat by the user's explicit request. Chess.com's own piece art and icons are never copied; the pieces are Staunty (CC BY-NC-SA 4.0, credited in the footer) and sounds come from Pixabay.",
+    "keyCharacteristics": [
+      "Warm graphite tonal stack (ground, surface, raised, line); no cool greys.",
+      "The ten badge colours are the only saturated colour besides the board-green accent.",
+      "Flat badge discs with white SVG-path glyphs.",
+      "Geist 800 display with negative tracking; tabular numerals on every eval, rating, accuracy and move number.",
+      "Two motion tiers: \"epic\" on the landing replay, \"subtle\" on the review page; reduced motion collapses both to still frames.",
+      "Sound is opt-in on every visit."
+    ],
+    "rules": [
+      {
+        "name": "The Verdict Owns Colour Rule",
+        "body": "Saturated colour beyond the board means a verdict. Never use a badge colour decoratively. When a badge colour appears, it names that badge.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Ladder Rule",
+        "body": "Depth comes from stepping ground, surface, raised, line. Every new neutral is a warm brown-black on this ladder, never a neutral or cool grey.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any number that changes or gets compared (eval, accuracy, rating, move number, percentage lost) is set with tabular numerals.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only-the-Board-Floats Rule",
+        "body": "Cards, panels and rows rest flat on the warm ladder. Only the board and what rides on it cast a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do pull every verdict colour, label and phrase from `BADGE` in `web/lib/review.ts`. Never re-type hexes.",
+      "Do keep badges flat: a solid disc and white SVG-path glyph, with no highlight, rim or shadow.",
+      "Do overhang the board badge at the target square's top-right, and tuck it inside on the visual top row or right column.",
+      "Do use the epic motion tier only on the landing replay, and the subtle tier on the review page. Gate every effect behind reduced motion.",
+      "Do keep sound off until the visitor turns it on, every visit.",
+      "Do set changing numbers in tabular numerals.",
+      "Do credit Staunty (CC BY-NC-SA 4.0) and Pixabay wherever the pieces and sounds ship."
+    ],
+    "donts": [
+      "Don't copy Chess.com's piece art, badge icons or other icons. Draw original glyphs.",
+      "Don't render badge glyphs as text characters (\"!!\", \"?\", \"★\"). They are paths.",
+      "Don't let move effects spill past the board's edge.",
+      "Don't add shadows to cards, panels or rows. Only the board and what floats on it are lifted.",
+      "Don't use badge colours for anything that isn't that verdict.",
+      "Don't introduce cool or neutral greys. Neutrals stay on the warm graphite ladder."
+    ]
+  }
+}

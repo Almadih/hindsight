@@ -1,0 +1,88 @@
+{
+  "title": "Choose the landing page structure",
+  "question": "Three structures for the Hindsight landing page, all in the app's existing graphite-and-board world. Lock one, steer, or re-roll.",
+  "options": [
+    {
+      "id": "roll",
+      "label": "PGN in, review out",
+      "kicker": "THE ROLL",
+      "lineage": "the move list itself",
+      "thesis": "The first viewport is the transformation: raw PGN text flows in from the left, becomes a board, and leaves as annotated moves.",
+      "palette": ["#1c1b19", "#eceae6", "#81b64c", "#739552", "#fa412d"],
+      "materials": ["monospace PGN stream", "live board", "badge chips"],
+      "viewport": "Headline with the username/PGN input inline; below, one full-width band where the Opera Game's PGN streams into a board and out as Mistake / Brilliant / Blunder lines.",
+      "risk": "If the band reads as three panels instead of one flow, it collapses into a split hero.",
+      "raised": [{ "from": "challenger-teletext", "raise": "The input is the hero's own control: you type into the headline row, not a button below it." }],
+      "html": ".impeccable/mocks/decision/roll.html"
+    },
+    {
+      "id": "wallchart",
+      "label": "Tournament wall chart",
+      "kicker": "STRUCTURE",
+      "lineage": "club tournament crosstables",
+      "thesis": "The page is a pairing wall of famous games already reviewed; your game claims Board 1.",
+      "palette": ["#1c1b19", "#262421", "#eceae6", "#81b64c", "#26c2a3"],
+      "materials": ["ruled crosstable grid", "accuracy figures", "badge dots"],
+      "viewport": "A ruled grid fills the screen: a double-size Board 1 cell holds the input, surrounded by famous games each showing both accuracies and their key badges, each one clickable into a real review.",
+      "risk": "Famous-game accuracies must come from real reviews we run, never invented numbers; the grid can feel like a dashboard.",
+      "html": ".impeccable/mocks/decision/wallchart.html"
+    },
+    {
+      "id": "replay",
+      "label": "The game plays itself",
+      "kicker": "STRUCTURE",
+      "lineage": "the review screen in motion",
+      "thesis": "A giant board replays the Opera Game on load with badges popping, eval bar swinging and the coach talking; the input docks on the board like a player bar.",
+      "palette": ["#1c1b19", "#ebecd0", "#739552", "#26c2a3", "#81b64c"],
+      "materials": ["full-height board", "eval bar", "coach card"],
+      "viewport": "An 820px board centred under the fold line, eval bar at its edge, a Brilliant badge landing on b5, the coach line beside it, and the username input floating across the board's lower rank.",
+      "risk": "Closest to what Chess.com itself shows; the motion has to carry it or it reads as a screenshot.",
+      "html": ".impeccable/mocks/decision/replay.html"
+    },
+    {
+      "id": "challenger-teletext", "label": "Teletext Service", "verdict": "declined",
+      "lineage": "broadcast teletext magazines", "thesis": "Pages keyed by number on a 40×24 grid.",
+      "palette": ["#000000", "#ffff00", "#00ffff", "#ffffff"], "materials": ["block mosaic", "bitmap type"],
+      "viewport": "P100 index with the game list as numbered pages.", "risk": "Retro novelty hides the board.",
+      "case": "Loses both axes: players don't recognise a review in it.", "kept": "The input is the whole interface."
+    },
+    {
+      "id": "challenger-streaming", "label": "Streaming title wall", "verdict": "declined",
+      "lineage": "streaming catalog rows", "thesis": "Recent games as poster rows that expand on focus.",
+      "palette": ["#141414", "#ffffff", "#81b64c"], "materials": ["poster tiles", "focus lift"],
+      "viewport": "Rows of game tiles; the focused one shows its accuracy.", "risk": "Needs a username before it shows anything.",
+      "case": "Loses clarity for a first-time visitor with no games loaded.", "kept": "One focused item grows; everything else steps back."
+    },
+    {
+      "id": "challenger-multiplane", "label": "Multiplane cel dawn", "verdict": "declined",
+      "lineage": "hand-painted animation planes", "thesis": "Painted depth layers sliding at different speeds.",
+      "palette": ["#3d5a3a", "#9fb0b8", "#3a2a1e", "#f0b54a"], "materials": ["gouache planes", "mist"],
+      "viewport": "A painted forest with the product name on the nearest cel.", "risk": "A picture of a world, not a chess tool.",
+      "case": "Loses both axes.", "kept": "Depth by layered speed, used for the board's pieces."
+    },
+    {
+      "id": "challenger-miura", "label": "Miura-fold sheet", "verdict": "declined",
+      "lineage": "deployable origami", "thesis": "One pull deploys a whole creased field.",
+      "palette": ["#f7f5f0", "#c9a74a", "#8a8378", "#a9c4d8"], "materials": ["scored paper", "gold foil"],
+      "viewport": "A packet unfolding into the review.", "risk": "Engineering metaphor, not a game.",
+      "case": "Loses both axes.", "kept": "One action unfolds everything at once."
+    },
+    {
+      "id": "challenger-ink", "label": "Suminagashi ink basin", "verdict": "declined",
+      "lineage": "marbled ink on water", "thesis": "The page as a fluid surface you stir.",
+      "palette": ["#f4f2ee", "#1f2a44", "#5b6475"], "materials": ["ink currents", "water"],
+      "viewport": "A basin of marbled ink answering the pointer.", "risk": "GPU cost and no product in sight.",
+      "case": "Loses both axes.", "kept": "The newest mark is always the darkest."
+    },
+    {
+      "id": "challenger-raygun", "label": "Raygun layout desk", "verdict": "declined",
+      "lineage": "1990s surf-music magazine layouts", "thesis": "Colliding columns you feel before you read.",
+      "palette": ["#efe9dc", "#111111", "#ff3d7f"], "materials": ["overprint", "battered grotesks"],
+      "viewport": "Overlapping headlines over a photo.", "risk": "Illegible where clarity is the product.",
+      "case": "Loses both axes.", "kept": "The urgent fragment is allowed to break the grid."
+    }
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": { "value": "code", "toggle": false }
+}

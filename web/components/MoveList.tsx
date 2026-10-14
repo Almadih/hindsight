@@ -29,7 +29,7 @@ export function MoveList({ moves, ply, onSelect }: { moves: ReviewMove[]; ply: n
         onClick={() => onSelect(m.ply)}
         className="flex min-w-0 items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-raised aria-[current=step]:bg-[#4b4844]"
       >
-        <span className="w-4 shrink-0">{NOTABLE.has(m.badge) && <BadgeIcon badge={m.badge} size={16} />}</span>
+        <span className="w-5 shrink-0">{NOTABLE.has(m.badge) && <BadgeIcon badge={m.badge} size={20} />}</span>
         <span className="truncate font-semibold">{m.san}</span>
         <span className="ml-auto text-xs text-muted tabular-nums">{formatEval(m)}</span>
       </button>

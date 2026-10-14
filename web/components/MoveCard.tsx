@@ -20,7 +20,7 @@ type Props = {
   onExit: () => void;
 };
 
-const action = "rounded bg-bg px-3 py-1.5 text-sm font-semibold hover:bg-[#3d3a35]";
+const action = "rounded bg-bg px-3 py-1.5 text-sm font-semibold hover:bg-line";
 
 /** What happened on the current ply, the coach's take, and ways to dig in: replay the best line or retry the move. */
 export function MoveCard({ move, fenBefore, opening, mode, onFollowUp, onRetry, onExit }: Props) {

@@ -1,4 +1,4 @@
-import { defaultPieces } from "react-chessboard";
+import { PIECES } from "@/lib/pieces";
 import type { Side } from "@/lib/types";
 
 type Props = { side: Side; name: string; rating?: string; material: number; captured: string[] };
@@ -17,7 +17,7 @@ export function PlayerBar({ side, name, rating, material, captured }: Props) {
         {captured.map((code, i) => (
           // Same-type pieces overlap like a stack; a new type gets a little air.
           <span key={i} className={`size-4 shrink-0 ${i && captured[i - 1] === code ? "-ml-2" : i ? "ml-0.5" : ""}`} aria-hidden="true">
-            {defaultPieces[code]()}
+            {PIECES[code]()}
           </span>
         ))}
         {lead > 0 && <span className="ml-1.5 text-muted tabular-nums">+{lead}</span>}

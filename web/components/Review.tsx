@@ -100,7 +100,13 @@ export function Review({ report, startFen, shared, onReanalyze }: Props) {
         <div className="flex gap-2">
           <EvalBar ev={move ?? report.start} flipped={flipped} />
           <div className="min-w-0 flex-1 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <Board fen={fen} flipped={flipped} move={mode.kind === "game" ? move : null} onMove={mode.kind === "retry" ? tryMove : undefined} />
+            <Board
+              fen={fen}
+              flipped={flipped}
+              move={mode.kind === "game" ? move : null}
+              onMove={mode.kind === "retry" ? tryMove : undefined}
+              fx={{ intensity: "subtle", prevFen: fenBefore }}
+            />
           </div>
         </div>
         <PlayerBar side={bottom} name={names[bottom]} rating={ratings[bottom]} material={material} captured={captured[bottom]} />
@@ -193,12 +199,12 @@ export function Review({ report, startFen, shared, onReanalyze }: Props) {
               }}
               aria-label={label}
               title={label}
-              className="flex justify-center rounded bg-raised py-2 hover:bg-[#3d3a35]"
+              className="flex justify-center rounded bg-raised py-2 hover:bg-line"
             >
               <Icon name={icon} />
             </button>
           ))}
-          <button onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)" className="flex justify-center rounded bg-raised py-2 hover:bg-[#3d3a35]">
+          <button onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board (F)" className="flex justify-center rounded bg-raised py-2 hover:bg-line">
             <Icon name="flip" />
           </button>
         </nav>

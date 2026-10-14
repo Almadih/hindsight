@@ -9,6 +9,7 @@
   --color-fg: #eceae6;
   --color-muted: #a8a39b;
   --color-accent: #81b64c;
+  --color-danger: #ff7769; /* error text and lost results; deliberately not tied to a verdict colour */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -46,4 +47,207 @@ select {
 
 progress {
   accent-color: var(--color-accent);
+}
+
+/* A badge landing on its square: the one authored motion of a move. */
+@keyframes badge-pop {
+  from {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+}
+
+.badge-pop {
+  animation: badge-pop 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The epic version: the verdict slams onto its square and settles. */
+@keyframes badge-slam {
+  0% {
+    transform: translateY(-70%) scale(2.6) rotate(-24deg);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(4%) scale(0.86) rotate(4deg);
+    opacity: 1;
+  }
+  78% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+}
+
+.badge-slam {
+  animation: badge-slam 560ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* Move effects (components/MoveFX.tsx). --fx is the move's verdict colour. */
+@keyframes fx-flash {
+  from {
+    background: rgb(255 255 255 / 0.55);
+  }
+  to {
+    background: rgb(255 255 255 / 0);
+  }
+}
+.fx-flash {
+  animation: fx-flash 420ms ease-out both;
+}
+
+@keyframes fx-impact {
+  from {
+    transform: scale(0.35);
+    opacity: 1;
+    border-width: 6px;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+.fx-impact,
+.fx-impact-soft {
+  border: 6px solid var(--fx);
+  animation: fx-impact 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.fx-impact-late {
+  animation-delay: 140ms;
+  animation-duration: 900ms;
+}
+.fx-impact-soft {
+  animation-duration: 420ms;
+  opacity: 0.7;
+}
+
+@keyframes fx-trail {
+  from {
+    background: color-mix(in srgb, var(--fx) 55%, transparent);
+  }
+  to {
+    background: transparent;
+  }
+}
+.fx-trail {
+  animation: fx-trail 500ms ease-out both;
+}
+
+@keyframes fx-shatter {
+  to {
+    transform: scale(1.9) rotate(32deg) translateY(-18%);
+    opacity: 0;
+    filter: blur(5px) brightness(1.8);
+  }
+}
+.fx-shatter {
+  animation: fx-shatter 520ms cubic-bezier(0.3, 0.6, 0.4, 1) both;
+}
+
+@keyframes fx-spark {
+  from {
+    transform: rotate(var(--a)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateX(var(--d)) scale(0.2);
+    opacity: 0;
+  }
+}
+.fx-spark {
+  width: 14%;
+  height: 14%;
+  margin: -7% 0 0 -7%;
+  border-radius: 999px;
+  background: var(--fx);
+  box-shadow: 0 0 10px var(--fx);
+  animation: fx-spark 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fx-sweep {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(120%) skewX(-20deg);
+  }
+}
+.fx-sweep {
+  background: linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--fx) 45%, white 15%) 50%, transparent 70%);
+  mix-blend-mode: screen;
+  animation: fx-sweep 900ms cubic-bezier(0.45, 0, 0.2, 1) 120ms both;
+}
+
+@keyframes fx-check {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 0 rgb(250 65 45 / 0);
+  }
+  40% {
+    box-shadow: inset 0 0 0 999px rgb(250 65 45 / 0.55);
+  }
+}
+.fx-check {
+  animation: fx-check 900ms ease-out both;
+}
+
+.fx-mate-king {
+  background: radial-gradient(circle, rgb(250 65 45 / 0.85) 0%, rgb(250 65 45 / 0.35) 60%, transparent 75%);
+  animation: fx-check 900ms ease-out infinite;
+}
+
+@keyframes fx-dim {
+  to {
+    background: rgb(0 0 0 / 0.38);
+  }
+}
+.fx-dim {
+  animation: fx-dim 500ms ease-out 250ms both;
+}
+
+@keyframes fx-stamp {
+  from {
+    transform: scale(2.4) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(-3deg);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1) rotate(-3deg);
+  }
+}
+.fx-stamp {
+  animation: fx-stamp 620ms cubic-bezier(0.2, 0.9, 0.3, 1) 450ms both;
+}
+
+/* The coach line rises in with each move; key verdicts flash the card in their colour. */
+@keyframes fx-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+.fx-rise {
+  animation: fx-rise 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fx-card-flash {
+  from {
+    box-shadow: 0 0 0 3px var(--fx), 0 0 40px color-mix(in srgb, var(--fx) 45%, transparent);
+  }
+}
+.fx-card-flash {
+  animation: fx-card-flash 900ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-pop,
+  .badge-slam,
+  .fx-rise,
+  .fx-card-flash {
+    animation: none;
+  }
+  [class*="fx-"]:not(.fx-rise):not(.fx-card-flash) {
+    display: none;
+  }
 }

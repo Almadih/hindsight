@@ -13,3 +13,7 @@ __pycache__/
 *.local.json
 
 .DS_Store
+
+# Impeccable session artifacts: review screenshots and decision-page logs are regenerated each run
+.impeccable/review/
+.impeccable/questions/

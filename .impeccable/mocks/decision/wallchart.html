@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;background:#1c1b19;color:#eceae6;font-family:system-ui,sans-serif;overflow:hidden}
+.top{display:flex;align-items:end;justify-content:space-between;padding:40px 56px 24px;border-bottom:2px solid #3d3a35}
+h1{font-size:72px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.chart{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;height:calc(900px - 150px)}
+.cell{border-right:2px solid #3d3a35;border-bottom:2px solid #3d3a35;padding:22px;display:flex;flex-direction:column;gap:12px}
+.cell b{font-size:26px}.acc{display:flex;gap:10px}.acc span{font-size:40px;font-weight:800}
+.dots{display:flex;gap:6px;margin-top:auto}.dots i{width:22px;height:22px;border-radius:50%}
+.you{grid-column:span 2;grid-row:span 2;background:#262421;outline:3px solid #81b64c;outline-offset:-3px;justify-content:center}
+.you h2{font-size:44px;font-weight:800}.in{height:72px;border-radius:10px;background:#1c1b19;border:2px solid #3d3a35}.go{height:72px;width:260px;border-radius:10px;background:#81b64c}
+</style></head><body>
+<div class="top"><h1>Hindsight</h1><span style="font-size:24px">Round 1 · Board 1 · your game</span></div>
+<div class="chart">
+ <div class="cell you"><h2>Your game goes here</h2><div class="in"></div><div class="go"></div></div>
+ <div class="cell"><b>Morphy vs Duke Karl, 1858</b><div class="acc"><span>96.8</span><span>85.7</span></div><div class="dots"><i style="background:#26c2a3"></i><i style="background:#749bbf"></i><i style="background:#fa412d"></i></div></div>
+ <div class="cell"><b>Anderssen vs Kieseritzky, 1851</b><div class="acc"><span>71.2</span><span>64.0</span></div><div class="dots"><i style="background:#26c2a3"></i><i style="background:#ffa459"></i></div></div>
+ <div class="cell"><b>Byrne vs Fischer, 1956</b><div class="acc"><span>78.4</span><span>94.1</span></div><div class="dots"><i style="background:#26c2a3"></i><i style="background:#f7c631"></i></div></div>
+ <div class="cell"><b>Anderssen vs Dufresne, 1852</b><div class="acc"><span>80.3</span><span>70.9</span></div><div class="dots"><i style="background:#749bbf"></i><i style="background:#fa412d"></i></div></div>
+ <div class="cell"><b>Kasparov vs Topalov, 1999</b><div class="acc"><span>89.0</span><span>86.5</span></div><div class="dots"><i style="background:#26c2a3"></i></div></div>
+ <div class="cell"><b>Deep Blue vs Kasparov, 1997</b><div class="acc"><span>92.6</span><span>81.3</span></div><div class="dots"><i style="background:#fa412d"></i></div></div>
+ <div class="cell"><b>Carlsen vs Anand, 2014</b><div class="acc"><span>93.0</span><span>88.2</span></div><div class="dots"><i style="background:#ffa459"></i></div></div>
+ <div class="cell"><b>Polgar vs Kasparov, 2002</b><div class="acc"><span>90.1</span><span>87.7</span></div><div class="dots"><i style="background:#f7c631"></i></div></div>
+</div></body></html>

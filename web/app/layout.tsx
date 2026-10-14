@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Game Review",
-  description: "Chess game analysis with Stockfish",
+  title: "Hindsight: free chess game review",
+  description: "Every move of your Chess.com or Lichess game rated, the mistakes explained, the better move shown. Free, no account.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

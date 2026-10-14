@@ -5,6 +5,8 @@ const PATHS = {
   last: "M7 18l6-6-6-6M13 18l6-6-6-6",
   flip: "M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3",
   back: "M19 12H5M11 18l-6-6 6-6",
+  soundOn: "M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13",
+  soundOff: "M11 5 6 9H3v6h3l5 4zM16 9.5l5 5M21 9.5l-5 5",
 };
 
 export function Icon({ name, size = 20 }: { name: keyof typeof PATHS; size?: number }) {
