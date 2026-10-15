@@ -2,18 +2,18 @@ import { BADGE } from "@/lib/review";
 import type { Badge } from "@/lib/types";
 import { BadgeIcon } from "../BadgeIcon";
 
-// Plain-language versions of the rules in api/src/review/classify.py; keep them in step.
 // Ordered best to worst along one scale: how much of your winning chances the move gives away.
-const SCALE: { badge: Badge; lost: string; rule: string }[] = [
-  { badge: "brilliant", lost: "0%", rule: "The best move, and it gives up material to get there." },
-  { badge: "great", lost: "0%", rule: "The only move that keeps your chances. Everything else loses ground." },
-  { badge: "best", lost: "under 1%", rule: "Exactly what the engine would play." },
-  { badge: "excellent", lost: "1–3%", rule: "Almost as good as the best move." },
-  { badge: "good", lost: "3–5%", rule: "A solid move that costs you a little." },
-  { badge: "inaccuracy", lost: "5–10%", rule: "A small slip." },
-  { badge: "mistake", lost: "10–20%", rule: "A real error your opponent can use." },
-  { badge: "miss", lost: "10%+", rule: "Your opponent slipped and you didn’t punish it." },
-  { badge: "blunder", lost: "20%+", rule: "Throws the game away, or walks into mate." },
+// The rule text lives in BADGE (lib/review.ts) so the review page shows the same words.
+const SCALE: { badge: Badge; lost: string }[] = [
+  { badge: "brilliant", lost: "0%" },
+  { badge: "great", lost: "0%" },
+  { badge: "best", lost: "under 1%" },
+  { badge: "excellent", lost: "1–3%" },
+  { badge: "good", lost: "3–5%" },
+  { badge: "inaccuracy", lost: "5–10%" },
+  { badge: "mistake", lost: "10–20%" },
+  { badge: "miss", lost: "10%+" },
+  { badge: "blunder", lost: "20%+" },
 ];
 
 /** Every verdict as one ladder, from keeping all your chances to throwing them away; Book sits off the scale. */
@@ -28,14 +28,14 @@ export function VerdictLadder() {
       <ol className="relative">
         {/* The scale itself: green where you keep your chances, red where you throw them away. */}
         <span aria-hidden="true" className="absolute top-5 bottom-5 left-[1.2rem] w-0.5 bg-linear-to-b from-[#26c2a3] via-[#f7c631] to-[#fa412d]" />
-        {SCALE.map(({ badge, lost, rule }) => (
+        {SCALE.map(({ badge, lost }) => (
           <li key={badge} className="relative grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-3">
             <BadgeIcon badge={badge} size={40} className="relative" />
             <div className="min-w-0">
               <p className="text-lg font-bold" style={{ color: BADGE[badge].color }}>
                 {BADGE[badge].label}
               </p>
-              <p className="text-pretty text-muted">{rule}</p>
+              <p className="text-pretty text-muted">{BADGE[badge].rule}</p>
             </div>
             <span className="text-right text-lg font-bold tabular-nums">{lost}</span>
           </li>

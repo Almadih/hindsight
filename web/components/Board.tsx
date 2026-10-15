@@ -28,10 +28,13 @@ type Props = {
   id?: string;
   /** An engine suggestion to draw when there is no reviewed move (the live analysis screen). */
   hintUci?: string;
+  /** Tap-to-move (retry): squares report taps, and the picked square is highlighted. */
+  onSquareClick?: (square: string) => void;
+  selected?: string | null;
 };
 
 /** Board at one ply: the played move tinted by its badge, badge on the target square, best move as an arrow. */
-export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hintUci }: Props) {
+export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hintUci, onSquareClick, selected }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const from = move?.uci.slice(0, 2);
   const to = move?.uci.slice(2, 4);
@@ -71,6 +74,7 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hin
           boardOrientation: flipped ? "black" : "white",
           allowDragging: Boolean(onMove),
           onPieceDrop: ({ sourceSquare, targetSquare }) => Boolean(onMove && targetSquare && onMove(sourceSquare, targetSquare)),
+          onSquareClick: onSquareClick ? ({ square }) => onSquareClick(square) : undefined,
           animationDurationInMs: epic ? 260 : 180,
           lightSquareStyle: LIGHT,
           darkSquareStyle: DARK,
@@ -82,7 +86,16 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hin
               : [],
           // A custom squareRenderer replaces the wrapper that would apply `squareStyles`, so tint here instead.
           squareRenderer: ({ square, children }) => (
-            <div className="relative size-full" style={tint && (square === from || square === to) ? tint : undefined}>
+            <div
+              className="relative size-full"
+              style={
+                square === selected
+                  ? { boxShadow: "inset 0 0 0 4px rgb(129 182 76 / 0.95)", backgroundColor: "rgb(129 182 76 / 0.25)" }
+                  : tint && (square === from || square === to)
+                    ? tint
+                    : undefined
+              }
+            >
               {children}
               {move && square === to && (
                 <BadgeIcon

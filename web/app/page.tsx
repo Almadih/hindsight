@@ -177,7 +177,7 @@ export default function Home() {
         </ol>
       </section>
 
-      <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+      <section id="verdicts" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <div>
             <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">Ten verdicts, one scale</h2>

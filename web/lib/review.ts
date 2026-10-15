@@ -6,18 +6,52 @@ export const BADGE_ORDER: Badge[] = [
   "brilliant", "great", "best", "excellent", "good", "book", "inaccuracy", "mistake", "miss", "blunder",
 ];
 
-export const BADGE: Record<Badge, { label: string; phrase: string; color: string }> = {
-  brilliant: { label: "Brilliant", phrase: "is brilliant", color: "#26c2a3" },
-  great: { label: "Great", phrase: "is a great move", color: "#749bbf" },
-  best: { label: "Best", phrase: "is best", color: "#81b64c" },
-  excellent: { label: "Excellent", phrase: "is excellent", color: "#96bc4b" },
-  good: { label: "Good", phrase: "is good", color: "#97af8b" },
-  book: { label: "Book", phrase: "is a book move", color: "#b39572" },
-  inaccuracy: { label: "Inaccuracy", phrase: "is an inaccuracy", color: "#f7c631" },
-  mistake: { label: "Mistake", phrase: "is a mistake", color: "#ffa459" },
-  miss: { label: "Miss", phrase: "is a miss", color: "#ff7769" },
-  blunder: { label: "Blunder", phrase: "is a blunder", color: "#fa412d" },
+// `rule`: plain-language versions of api/src/review/classify.py; keep them in step.
+export const BADGE: Record<Badge, { label: string; phrase: string; color: string; rule: string }> = {
+  brilliant: { label: "Brilliant", phrase: "is brilliant", color: "#26c2a3", rule: "The best move, and it gives up material to get there." },
+  great: { label: "Great", phrase: "is a great move", color: "#749bbf", rule: "The only move that keeps your chances. Everything else loses ground." },
+  best: { label: "Best", phrase: "is best", color: "#81b64c", rule: "Exactly what the engine would play." },
+  excellent: { label: "Excellent", phrase: "is excellent", color: "#96bc4b", rule: "Almost as good as the best move." },
+  good: { label: "Good", phrase: "is good", color: "#97af8b", rule: "A solid move that costs you a little." },
+  book: { label: "Book", phrase: "is a book move", color: "#b39572", rule: "Known opening theory." },
+  inaccuracy: { label: "Inaccuracy", phrase: "is an inaccuracy", color: "#f7c631", rule: "A small slip." },
+  mistake: { label: "Mistake", phrase: "is a mistake", color: "#ffa459", rule: "A real error your opponent can use." },
+  miss: { label: "Miss", phrase: "is a miss", color: "#ff7769", rule: "Your opponent slipped and you didn’t punish it." },
+  blunder: { label: "Blunder", phrase: "is a blunder", color: "#fa412d", rule: "Throws the game away, or walks into mate." },
 };
+
+/** Verdict colour lifted toward white so small text clears 4.5:1 on the dark surfaces; discs keep the true colour. */
+export const badgeText = (badge: Badge) => `color-mix(in srgb, ${BADGE[badge].color} 72%, white)`;
+
+const KEY_SCORE: Partial<Record<Badge, number>> = { brilliant: 40, great: 18 };
+const BAD = new Set<Badge>(["blunder", "miss", "mistake", "inaccuracy"]);
+
+/**
+ * The moments that decided the game: brilliant and great moves plus the costliest errors, at most `limit`,
+ * in game order. Errors score by the winning chances they gave away.
+ */
+export function keyMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wBefore" | "wAfter">>(moves: M[], limit = 4): M[] {
+  return moves
+    .map((m) => ({ m, score: KEY_SCORE[m.badge] ?? (BAD.has(m.badge) ? m.wBefore - m.wAfter : 0) }))
+    .filter((x) => x.score >= 5)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.m)
+    .sort((a, b) => a.ply - b.ply);
+}
+
+/** Moves worth stepping between with Next / Previous key move: every verdict except the quiet ones. */
+export const isNotableMove = (m: Pick<ReviewMove, "badge">) => NOTABLE.has(m.badge) && m.badge !== "book";
+
+/** The evaluation in words, for people who don't read engine numbers. */
+export function describeEval({ evalWhite, mateWhite }: WhiteEval): string {
+  if (mateWhite === 0) return evalWhite > 0 ? "White has checkmated" : "Black has checkmated";
+  if (mateWhite !== null) return `${mateWhite > 0 ? "White" : "Black"} mates in ${Math.abs(mateWhite)}`;
+  const pawns = Math.abs(evalWhite);
+  if (pawns < 0.3) return "Equal position";
+  const side = evalWhite > 0 ? "White" : "Black";
+  return pawns < 1 ? `${side} is slightly better` : pawns < 3 ? `${side} is better` : `${side} is winning`;
+}
 
 /** Badges worth flagging in the move list and on the graph; the rest are the quiet majority. */
 export const NOTABLE = new Set<Badge>(["brilliant", "great", "book", "inaccuracy", "mistake", "miss", "blunder"]);
@@ -31,6 +65,8 @@ export function whiteWinPct({ evalWhite, mateWhite }: WhiteEval): number {
 export function formatEval({ evalWhite, mateWhite }: WhiteEval): string {
   if (mateWhite === 0) return evalWhite > 0 ? "1-0" : "0-1";
   if (mateWhite !== null) return `M${Math.abs(mateWhite)}`;
+  // Never show "-0.0": a near-zero eval is just equal.
+  if (Math.abs(evalWhite) < 0.05) return "0.0";
   return `${evalWhite > 0 ? "+" : ""}${evalWhite.toFixed(1)}`;
 }
 

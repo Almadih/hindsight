@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PositionEval } from "@/lib/engine/pool";
 import { capturedPieces, formatEval, materialDiff, uciToSan } from "@/lib/review";
@@ -38,7 +39,8 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   // Positions 0..frontier-1 are all evaluated; the board only ever shows those.
   let frontier = 0;
   while (frontier < fens.length && evals[frontier]) frontier++;
-  const done = evals.filter(Boolean).length;
+  // Count only the contiguous prefix: workers finish out of order, so "done" alone overstates progress.
+  const done = frontier;
   const [view, setView] = useState(0);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   const moveLabel = shown ? `${Math.ceil(shown / 2)}.${shown % 2 ? "" : ".."} ${sans[shown - 1]}` : "the start";
 
   return (
-    <main className="mx-auto grid w-full max-w-[1240px] gap-5 p-3 sm:p-5 lg:h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
+    <main className="mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-5 p-3 sm:p-5 lg:h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
       <section className="mx-auto flex w-full max-w-[calc(100dvh-6rem)] flex-col gap-1.5 lg:self-center" aria-label="Board">
         <PlayerBar side="black" name={names.black} rating={ratings.black} material={material} captured={captured.black} />
         <div className="flex gap-2">
@@ -75,12 +77,17 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
         <PlayerBar side="white" name={names.white} rating={ratings.white} material={material} captured={captured.white} />
       </section>
 
-      <aside className="flex flex-col gap-4 rounded-lg bg-surface p-4 lg:my-5">
-        <header>
-          <h1 className="text-lg font-semibold text-balance">
-            {names.white} vs {names.black}
-          </h1>
-          <p className="text-sm text-muted">Reviewing in your browser</p>
+      <aside className="flex min-w-0 flex-col gap-4 rounded-lg bg-surface p-4 lg:my-5">
+        <header className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-semibold text-balance">
+              {names.white} vs {names.black}
+            </h1>
+            <p className="text-sm text-muted">Reviewing in your browser</p>
+          </div>
+          <Link href="/" className="rounded px-2 py-1.5 text-sm font-semibold text-muted hover:bg-raised hover:text-fg">
+            Cancel
+          </Link>
         </header>
 
         <div className="space-y-3 rounded-md bg-raised p-4" aria-live="polite">
@@ -98,7 +105,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
           </p>
         </div>
 
-        <EvalGraph report={graph} ply={shown} onSelect={() => {}} className="h-24" />
+        <EvalGraph report={graph} ply={shown} className="h-24" />
         <p className="text-sm text-pretty text-muted">
           Stockfish is checking every position. The verdicts arrive together when it finishes; a game this long takes about{" "}
           {Math.max(10, Math.round(fens.length * 0.45))} seconds.

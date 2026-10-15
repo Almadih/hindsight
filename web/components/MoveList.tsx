@@ -31,7 +31,7 @@ export function MoveList({ moves, ply, onSelect }: { moves: ReviewMove[]; ply: n
       >
         <span className="w-5 shrink-0">{NOTABLE.has(m.badge) && <BadgeIcon badge={m.badge} size={20} />}</span>
         <span className="truncate font-semibold">{m.san}</span>
-        <span className="ml-auto text-xs text-muted tabular-nums">{formatEval(m)}</span>
+        <span className={`ml-auto text-xs tabular-nums ${m.ply === ply ? "text-fg" : "text-muted"}`}>{formatEval(m)}</span>
       </button>
     ) : (
       <span />

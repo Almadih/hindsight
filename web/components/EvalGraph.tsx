@@ -10,7 +10,18 @@ type GraphData = { start: WhiteEval; moves: Pick<ReviewMove, "ply" | "badge" | "
 type Point = { ply: number; w: number; color?: string };
 
 /** White's win% across the game; click to jump to a ply. Notable moves get a dot in their badge colour. */
-export function EvalGraph({ report, ply, onSelect, className = "h-24" }: { report: GraphData; ply: number; onSelect: (ply: number) => void; className?: string }) {
+export function EvalGraph({
+  report,
+  ply,
+  onSelect,
+  className = "h-24",
+}: {
+  report: GraphData;
+  ply: number;
+  /** Omit for a display-only graph (no pointer cursor, no clicks). */
+  onSelect?: (ply: number) => void;
+  className?: string;
+}) {
   const data: Point[] = [
     { ply: 0, w: whiteWinPct(report.start) },
     ...report.moves.map((m) => ({
@@ -26,8 +37,8 @@ export function EvalGraph({ report, ply, onSelect, className = "h-24" }: { repor
         <AreaChart
           data={data}
           margin={{ top: 4, right: 4, bottom: 4, left: 4 }}
-          onClick={(s) => s.activeTooltipIndex != null && onSelect(Number(s.activeTooltipIndex))}
-          className="cursor-pointer"
+          onClick={onSelect ? (s) => s.activeTooltipIndex != null && onSelect(Number(s.activeTooltipIndex)) : undefined}
+          className={onSelect ? "cursor-pointer" : undefined}
           accessibilityLayer={false}
         >
           <XAxis dataKey="ply" type="number" domain={[0, data.length - 1]} hide />
