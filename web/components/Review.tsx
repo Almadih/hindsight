@@ -204,7 +204,7 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     const ok = isGoodRetry(move, played.lan);
     if (ok) setSolved((s) => new Set(s).add(ply));
     setMode({ kind: "retry", fen: ok ? chess.fen() : mode.fen, feedback: { ok, san: played.san, uci: played.lan } });
-    if (sound) playMove({ san: played.san, badge: ok ? "great" : "mistake" });
+    if (sound) playMove({ san: played.san });
     return ok;
   };
   // Tap-to-move for phones and keyboards: tap your piece, then its destination.
