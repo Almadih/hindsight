@@ -4,8 +4,9 @@ import { Chess } from "chess.js";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mySide } from "@/lib/me";
-import { capturedPieces, followUpLine, isGoodRetry, isNotableMove, keyMoments, materialDiff } from "@/lib/review";
+import { BADGE, badgeText, canRetry, capturedPieces, decidingMoments, followUpLine, isGoodRetry, materialDiff } from "@/lib/review";
 import type { Badge, Report, Side } from "@/lib/types";
+import { BadgeIcon } from "./BadgeIcon";
 import { Board } from "./Board";
 import { EvalBar } from "./EvalBar";
 import { EvalGraph } from "./EvalGraph";
@@ -19,6 +20,7 @@ type Tab = "summary" | "moves";
 
 const LINE_STEP_MS = 700;
 const GAME: Mode = { kind: "game" };
+const END: Mode = { kind: "end" };
 // The moments worth a full-strength board reaction; everything else stays on the quiet tier.
 const DECISIVE = new Set<Badge>(["brilliant", "great", "blunder", "miss"]);
 
@@ -69,44 +71,63 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   const [mode, setMode] = useState<Mode>(GAME);
   const [picked, setPicked] = useState<string | null>(null);
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const last = report.moves.length;
-  const moments = keyMoments(me ? report.moves.filter((m) => m.color === me) : report.moves);
-  const notable = report.moves.filter(isNotableMove).map((m) => m.ply);
+  const { moments, mine } = decidingMoments(report.moves, me);
+  const momentPlies = moments.map((m) => m.ply);
 
-  // Any navigation leaves a follow-up line or retry and returns to the game.
+  // Any navigation leaves a follow-up line, retry or the end card and returns to the game.
   const go = (p: number) => {
     setMode(GAME);
     setPicked(null);
+    setRevealed(false);
     setPly(Math.max(0, Math.min(last, p)));
     setTab("moves");
   };
-  const nextKey = (from: number) => notable.find((p) => p > from);
-  const prevKey = (from: number) => [...notable].reverse().find((p) => p < from);
+  // Next/Previous walk the key moments only; after the last one the review ends on a recap.
+  const nextMoment = mode.kind === "end" ? undefined : momentPlies.find((p) => p > ply);
+  const prevMoment = mode.kind === "end" ? momentPlies.at(-1) : [...momentPlies].reverse().find((p) => p < ply);
+  const canFinish = mode.kind !== "end" && nextMoment === undefined && moments.length > 0;
+  const toNext = () => {
+    if (nextMoment !== undefined) go(nextMoment);
+    else if (canFinish) {
+      setMode(END);
+      setTab("moves");
+    }
+  };
+  const toPrev = () => prevMoment !== undefined && go(prevMoment);
 
-  // Keyboard: arrows/Home/End step, N/P jump between key moves, F flips. Ignored while typing or on the tabs.
+  // On phones the board sits above the panel; after a jump from far down the page, bring it back into view.
+  const boardRef = useRef<HTMLElement>(null);
+  const showBoard = () => {
+    const el = boardRef.current;
+    if (el && el.getBoundingClientRect().top < 0) {
+      el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+  };
+  const jumpTo = (p: number) => {
+    go(p);
+    showBoard();
+  };
+
+  // Keyboard: arrows/Home/End step, N/P walk the key moments, F flips. Ignored while typing or on the tabs.
+  // Re-subscribed every render so the handler always sees the current ply and mode.
   useEffect(() => {
-    const keys = report.moves.filter(isNotableMove).map((m) => m.ply);
     const onKey = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (target?.closest("input, textarea, select, [role=tablist]") || e.ctrlKey || e.metaKey || e.altKey) return;
       const step = { ArrowLeft: -1, ArrowRight: 1, Home: -Infinity, End: Infinity }[e.key];
       const key = e.key.toLowerCase();
-      const jump = (dir: 1 | -1) =>
-        setPly((p) => (dir > 0 ? keys.find((q) => q > p) : [...keys].reverse().find((q) => q < p)) ?? p);
       if (step !== undefined) {
         e.preventDefault();
-        setPly((p) => Math.max(0, Math.min(last, p + step)));
-      } else if (key === "n") jump(1);
-      else if (key === "p") jump(-1);
-      else if (key === "f") return setFlipped((f) => !f);
-      else return;
-      setMode(GAME);
-      setPicked(null);
-      setTab("moves");
+        go(ply + step);
+      } else if (key === "n") toNext();
+      else if (key === "p") toPrev();
+      else if (key === "f") setFlipped((f) => !f);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, report.moves]);
+  });
 
   // Play the engine line out one move at a time, until the user steps it by hand.
   useEffect(() => {
@@ -125,7 +146,11 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   const material = materialDiff(fen);
   const captured = capturedPieces(fen);
 
-  const followUp = () => move && setMode({ kind: "line", ...followUpLine(fenBefore, move.bestPv), index: 0, playing: true });
+  const followUp = () => {
+    if (!move) return;
+    setRevealed(true);
+    setMode({ kind: "line", ...followUpLine(fenBefore, move.bestPv), index: 0, playing: true });
+  };
   const retry = () => {
     setPicked(null);
     setMode({ kind: "retry", fen: fenBefore, feedback: null });
@@ -154,10 +179,14 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     } else setPicked(mine ? square : null);
   };
 
-  // A solved retry lands the Best badge on the board like any reviewed move.
+  // A solved retry lands the Best badge on the board like any reviewed move. On an unsolved error the
+  // best-move arrow stays hidden so the board doesn't give the retry away.
+  const onGame = mode.kind === "game" || mode.kind === "end";
   const boardMove =
-    mode.kind === "game"
-      ? move
+    onGame
+      ? move && canRetry(move) && !revealed
+        ? { ...move, bestUci: null }
+        : move
       : mode.kind === "retry" && mode.feedback?.ok
         ? { ply: 10_000 + ply, san: mode.feedback.san, uci: mode.feedback.uci, badge: "best" as const, bestUci: null }
         : null;
@@ -175,16 +204,16 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   };
 
   const navButton = "flex items-center justify-center gap-1.5 rounded bg-raised py-2 text-sm font-semibold hover:bg-line disabled:opacity-40";
-  // Two rows: jump between key moves on top, single-step and flip below.
+  // Two rows: walk the key moments on top, single-step and flip below.
   const navRows = (titles: boolean) => (
     <>
       <div className="grid grid-cols-2 gap-1">
-        <button onClick={() => go(prevKey(ply) ?? ply)} disabled={prevKey(ply) === undefined} className={navButton} title={titles ? "Previous key move (P)" : undefined}>
+        <button onClick={toPrev} disabled={prevMoment === undefined} className={navButton} title={titles ? "Previous key moment (P)" : undefined}>
           <Icon name="prev" size={18} />
-          Previous key move
+          Previous key moment
         </button>
-        <button onClick={() => go(nextKey(ply) ?? ply)} disabled={nextKey(ply) === undefined} className={navButton} title={titles ? "Next key move (N)" : undefined}>
-          Next key move
+        <button onClick={toNext} disabled={nextMoment === undefined && !canFinish} className={navButton} title={titles ? (canFinish ? "Finish the review (N)" : "Next key moment (N)") : undefined}>
+          {canFinish ? "Finish review" : "Next key moment"}
           <Icon name="next" size={18} />
         </button>
       </div>
@@ -205,7 +234,8 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   return (
     <main className="mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-4 p-3 pb-32 sm:p-5 sm:pb-32 lg:h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] lg:gap-5 lg:pb-5">
       <section
-        className="mx-auto flex w-full max-w-[calc(100dvh-6rem)] flex-col gap-1.5 lg:self-center"
+        ref={boardRef}
+        className="mx-auto scroll-mt-3 flex w-full max-w-[calc(100dvh-6rem)] flex-col gap-1.5 lg:self-center"
         aria-label="Board"
         onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
         onTouchEnd={onTouchEnd}
@@ -213,7 +243,7 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         <PlayerBar side={top} name={me === top ? `${names[top]} (you)` : names[top]} rating={ratings[top]} material={material} captured={captured[top]} />
         <div className="flex gap-2">
           {/* During a retry or an engine line the bar shows the position being explored, not the played move. */}
-          <EvalBar ev={mode.kind === "game" ? (move ?? report.start) : evalBefore} flipped={flipped} />
+          <EvalBar ev={onGame ? (move ?? report.start) : evalBefore} flipped={flipped} />
           <div className="min-w-0 flex-1 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
             <Board
               fen={fen}
@@ -327,11 +357,44 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="order-2 flex min-h-0 flex-1 flex-col gap-3 lg:order-none">
           {tab === "summary" ? (
             <>
-              <SummaryCard report={report} names={names} me={me} onJump={go} />
-              <button onClick={() => go(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
+              <SummaryCard report={report} names={names} me={me} moments={moments} mine={mine} onJump={jumpTo} />
+              <button onClick={() => jumpTo(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
                 {moments.length ? "Start with the first key moment" : "Start review"}
               </button>
             </>
+          ) : mode.kind === "end" ? (
+            <section aria-labelledby="end-title" aria-live="polite" className="space-y-3 rounded-md bg-raised px-3 py-3">
+              <div>
+                <h2 id="end-title" className="font-semibold">
+                  That’s what decided it
+                </h2>
+                <p className="text-sm text-pretty text-muted">{verdictLine(headers.Result, names, me)}</p>
+              </div>
+              <ol className="space-y-1">
+                {moments.map((m) => (
+                  <li key={m.ply}>
+                    <button onClick={() => go(m.ply)} className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left text-sm hover:bg-line">
+                      <BadgeIcon badge={m.badge} size={20} className="shrink-0" />
+                      <span className="font-semibold tabular-nums">
+                        {Math.ceil(m.ply / 2)}.{m.color === "black" ? ".." : ""} {m.san}
+                      </span>
+                      <span style={{ color: badgeText(m.badge) }}>{BADGE[m.badge].phrase}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => {
+                    setMode(GAME);
+                    setTab("summary");
+                  }} className="rounded bg-accent px-3 py-1.5 text-sm font-bold text-[#141311] hover:brightness-110">
+                  Back to summary
+                </button>
+                <button onClick={() => go(ply + 1)} className="rounded bg-bg px-3 py-1.5 text-sm font-semibold hover:bg-line">
+                  Keep stepping through the game
+                </button>
+              </div>
+            </section>
           ) : (
             <>
               <MoveCard
@@ -339,10 +402,14 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
                 fenBefore={fenBefore}
                 opening={report.opening}
                 mode={mode}
+                revealed={revealed}
+                moment={momentPlies.includes(ply) ? { index: momentPlies.indexOf(ply) + 1, total: momentPlies.length } : null}
+                onReveal={() => setRevealed(true)}
                 onFollowUp={followUp}
                 onRetry={retry}
                 onExit={() => {
                   setPicked(null);
+                  setRevealed(true);
                   setMode(GAME);
                 }}
                 onLineStep={(index) => mode.kind === "line" && setMode({ ...mode, index, playing: index === 0 })}
@@ -353,7 +420,8 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         </div>
 
         {/* Desktop navigation; phones get the sticky bar below instead. */}
-        <nav aria-label="Move navigation" className="order-5 hidden gap-1 lg:order-none lg:grid">
+        {/* Hidden on the Summary tab to give the key moments the height; the summary has its own start button. */}
+        <nav aria-label="Move navigation" className={`order-5 hidden gap-1 lg:order-none ${tab === "moves" ? "lg:grid" : ""}`}>
           {navRows(true)}
         </nav>
       </aside>
@@ -366,4 +434,13 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
       </nav>
     </main>
   );
+}
+
+/** One plain sentence on how the game ended, from your side when we know it. */
+function verdictLine(result: string | undefined, names: Record<Side, string>, me: Side | null): string {
+  if (result === "1/2-1/2") return "The game ended in a draw.";
+  const winner: Side | null = result === "1-0" ? "white" : result === "0-1" ? "black" : null;
+  if (!winner) return "These are the moves that swung it.";
+  if (me) return me === winner ? "You won. These are the moves that swung it." : "You lost. These are the moves that swung it.";
+  return `${names[winner]} won. These are the moves that swung it.`;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BADGE, BADGE_ORDER, badgeText, keyMoments } from "@/lib/review";
-import type { Phase, Report, Side } from "@/lib/types";
+import { BADGE, BADGE_ORDER, badgeText } from "@/lib/review";
+import type { Phase, Report, ReviewMove, Side } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 
 const PHASES: { key: Phase; label: string }[] = [
@@ -41,20 +41,26 @@ function gist(text: string | null | undefined): string | null {
   return first.length > 110 ? `${first.slice(0, 107)}…` : first;
 }
 
-type Props = { report: Report; names: Record<Side, string>; me: Side | null; onJump: (ply: number) => void };
+type Props = {
+  report: Report;
+  names: Record<Side, string>;
+  me: Side | null;
+  /** From decidingMoments, shared with the review's key-moment navigation so both list the same moves. */
+  moments: ReviewMove[];
+  mine: boolean;
+  onJump: (ply: number) => void;
+};
 
 /** The game in one screen: the moments that decided it first, then accuracy, rating and every verdict count. */
-export function SummaryCard({ report, names, me, onJump }: Props) {
+export function SummaryCard({ report, names, me, moments, mine, onJump }: Props) {
   const { accuracy, counts, elo } = report;
-  // When we know who "you" are, lead with your moments; fall back to both sides if you had none.
-  const mine = me ? keyMoments(report.moves.filter((m) => m.color === me)) : [];
-  const moments = mine.length ? mine : keyMoments(report.moves);
   return (
-    <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm">
+    // relative: keeps the sr-only table captions inside this scroll box instead of stretching the page.
+    <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm">
       {moments.length > 0 && (
         <section aria-labelledby="key-moments">
           <h2 id="key-moments" className="mb-2 font-semibold">
-            {mine.length ? "Your key moments" : "Key moments"}
+            {mine ? "Your key moments" : "Key moments"}
           </h2>
           <ol className="space-y-1.5">
             {moments.map((m, i) => (

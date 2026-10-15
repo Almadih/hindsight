@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import type { Badge, ReviewMove, WhiteEval } from "./types";
+import type { Badge, ReviewMove, Side, WhiteEval } from "./types";
 
 /** Display order, best to worst. */
 export const BADGE_ORDER: Badge[] = [
@@ -40,8 +40,14 @@ export function keyMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wBefore
     .sort((a, b) => a.ply - b.ply);
 }
 
-/** Moves worth stepping between with Next / Previous key move: every verdict except the quiet ones. */
-export const isNotableMove = (m: Pick<ReviewMove, "badge">) => NOTABLE.has(m.badge) && m.badge !== "book";
+/** Your key moments when we know your side (falling back to both sides if you had none), else both sides'. */
+export function decidingMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wBefore" | "wAfter" | "color">>(moves: M[], me: Side | null) {
+  const mine = me ? keyMoments(moves.filter((m) => m.color === me)) : [];
+  return { moments: mine.length ? mine : keyMoments(moves), mine: mine.length > 0 };
+}
+
+/** Errors with an engine alternative can be retried on the board. */
+export const canRetry = (m: Pick<ReviewMove, "badge" | "alternatives">) => BAD.has(m.badge) && m.alternatives.length > 0;
 
 /** The evaluation in words, for people who don't read engine numbers. */
 export function describeEval({ evalWhite, mateWhite }: WhiteEval): string {
@@ -140,5 +146,8 @@ export function followUpLine(fen: string, pv: string[]): { fens: string[]; sans:
       return { fens, sans };
     }
   }
-  return { fens: fens.slice(0, LINE_QUIET + 1), sans: sans.slice(0, LINE_QUIET) };
+  // Never stop mid-exchange: run on while the next move is a capture (Bxc3 without bxc3 looks like a lost piece).
+  let n = Math.min(LINE_QUIET, sans.length);
+  while (n < sans.length && new Chess(fens[n]).get(pv[n].slice(2, 4) as Parameters<typeof chess.get>[0])) n++;
+  return { fens: fens.slice(0, n + 1), sans: sans.slice(0, n) };
 }

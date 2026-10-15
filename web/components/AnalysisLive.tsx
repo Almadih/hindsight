@@ -9,6 +9,7 @@ import type { Side, WhiteEval } from "@/lib/types";
 import { Board } from "./Board";
 import { EvalBar } from "./EvalBar";
 import { EvalGraph } from "./EvalGraph";
+import { Icon } from "./Icon";
 import { PlayerBar } from "./PlayerBar";
 
 const STEP_MS = 120; // how fast the board catches up with the engine
@@ -43,7 +44,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   // Count only the contiguous prefix: workers finish out of order, so "done" alone overstates progress.
   const done = frontier;
   const [view, setView] = useState(0);
-  const [flipped] = useState(() => mySide(headers) === "black");
+  const [flipped, setFlipped] = useState(() => mySide(headers) === "black");
 
   useEffect(() => {
     if (view >= frontier - 1) return;
@@ -87,6 +88,9 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
             </h1>
             <p className="text-sm text-muted">Reviewing in your browser</p>
           </div>
+          <button onClick={() => setFlipped((f) => !f)} aria-label="Flip board" title="Flip board" className="rounded px-2 py-1.5 text-muted hover:bg-raised hover:text-fg">
+            <Icon name="flip" />
+          </button>
           <Link href="/" className="rounded px-2 py-1.5 text-sm font-semibold text-muted hover:bg-raised hover:text-fg">
             Cancel
           </Link>
