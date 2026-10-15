@@ -78,7 +78,16 @@ def describe(
     if badge not in KEY_BADGES:
         return []
     if badge in GOOD_BADGES:
-        return motifs(board, move)
+        # What a strong move leads to, so the coach can explain the point, not just the motif.
+        facts = motifs(board, move)
+        after = board.copy(stack=False)
+        after.push(move)
+        reply = parse_move(after, reply_uci)
+        if mate_after is not None and mate_after < 0 and not after.is_checkmate():
+            facts.append(f"it forces mate in {-mate_after}")
+        if reply:
+            facts.append(f"the best answer is {after.san(reply)}")
+        return facts
 
     san = board.san(move)
     mover = board.turn

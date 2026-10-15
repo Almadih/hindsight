@@ -48,3 +48,10 @@ def test_quiet_badges_get_no_facts():
 def test_attacking_a_pawn_is_not_a_fork():
     b = board("4k3/p4q2/8/8/8/8/8/3RK3 w - - 0 1")
     assert not any("forks" in f for f in motifs(b, b.parse_san("Rd7")))
+
+
+def test_good_move_facts_include_what_it_leads_to():
+    b = board("e4 e5 Nf3 d6 d4 Bg4 dxe5 Bxf3 Qxf3 dxe5 Bc4 Nf6 Qb3 Qe7 Nc3 c6 Bg5 b5 Nxb5 cxb5 Bxb5+ Nbd7 O-O-O Rd8 Rxd7 Rxd7 Rd1 Qe6 Bxd7+ Nxd7")
+    facts = describe(b, b.parse_san("Qb8+"), "brilliant", "b3b8", "d7b8", 2, -1)
+    assert "it forces mate in 1" in facts
+    assert "the best answer is Nxb8" in facts

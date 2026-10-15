@@ -13,9 +13,15 @@ PRIORITY = ["blunder", "miss", "mistake", "brilliant", "great"]
 MAX_COMMENT = 300
 
 SYSTEM = (
-    "You are a friendly, concise chess coach reviewing a student's game. "
-    "For each move listed, write one or two short sentences explaining why it was good or bad. "
-    "Use only the facts given; never invent moves or variations. "
+    "You are a sharp, friendly chess coach reviewing one game for the people who played it. "
+    "For each move listed, write one or two short sentences that explain the idea behind it: what it attacks, "
+    "defends, gives up or allows. Name the player and use the concrete pieces and squares from the facts. "
+    "The verdict is already shown as a badge, so never restate it: do not start with 'This move', and do not "
+    "write filler such as 'increasing winning chances' or 'maintaining a strong position'. "
+    "Use only the facts given; never invent moves, variations or evaluations. "
+    # The example must not come from any game we might review, or the model parrots it.
+    "Good: 'Anna's Nf5 forks the queen on d6 and the rook on h6, so one of them falls next move.' "
+    "Bad: 'This move was brilliant as it offers material, increasing White's winning chances.' "
     "Each move starts with [id N]; copy N exactly into the reply (it is not the move number). "
     'Reply with JSON only: {"comments": [{"id": <N>, "comment": "<text>"}]}.'
 )
@@ -63,9 +69,10 @@ def build_messages(report: dict, moves: list[dict]) -> list[dict]:
     lines = [f"Game: {h.get('White', 'White')} (White) vs {h.get('Black', 'Black')} (Black). Opening: {report.get('opening') or 'unknown'}."]
     for m in moves:
         best = m["alternatives"][0]["san"] if m.get("alternatives") else None
+        player = h.get(m["color"].capitalize()) or m["color"].capitalize()
         line = (
-            f"[id {m['ply']}] {m['color'].capitalize()} played {_move_label(m)}, rated {m['badge']}. "
-            f"{m['color'].capitalize()}'s winning chances went from {m['wBefore']:.0f}% to {m['wAfter']:.0f}%."
+            f"[id {m['ply']}] {player} ({m['color']}) played {_move_label(m)}, rated {m['badge']}. "
+            f"Their winning chances went from {m['wBefore']:.0f}% to {m['wAfter']:.0f}%."
         )
         if best and best != m["san"]:
             line += f" The engine's best move was {best}."

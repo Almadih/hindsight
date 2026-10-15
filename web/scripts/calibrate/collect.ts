@@ -23,7 +23,9 @@ type Game = { url: string; pgn: string; accuracies: { white: number; black: numb
 
 async function getJson(url: string) {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, { headers: { "User-Agent": UA } });
+    // A dropped connection must skip this request, not end a 40-minute run.
+    const res = await fetch(url, { headers: { "User-Agent": UA } }).catch(() => null);
+    if (!res) continue;
     if (res.status === 429) {
       await new Promise((r) => setTimeout(r, 5000));
       continue;
