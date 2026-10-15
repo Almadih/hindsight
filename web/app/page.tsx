@@ -14,6 +14,7 @@ import { DEMO } from "@/lib/demo-game";
 import { Icon } from "@/components/Icon";
 import { BADGE, keyMoments, NOTABLE } from "@/lib/review";
 import { playMove, primeSounds } from "@/lib/sfx";
+import type { Platform } from "@/lib/api";
 import type { GameSummary } from "@/lib/types";
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -48,7 +49,7 @@ export default function Home() {
   const reduced = useSyncExternalStore(subscribeReduced, () => matchMedia(REDUCED).matches, () => false);
   const [step, setStep] = useState(0);
   const [held, setHeld] = useState(false);
-  const [found, setFound] = useState<{ games: GameSummary[]; username: string } | null>(null);
+  const [found, setFound] = useState<{ games: GameSummary[]; username: string; platform: Platform } | null>(null);
   // Off by default every visit; the toggle click doubles as the gesture browsers require before audio.
   const [sound, setSound] = useState(false);
   const ply = reduced ? STILL_PLY : step;
@@ -115,13 +116,19 @@ export default function Home() {
             </div>
           </div>
           <div className="relative z-40 mx-auto mt-4 max-w-[calc(100dvh-7.5rem)] lg:absolute lg:inset-x-0 lg:bottom-[5%] lg:mt-0 lg:px-[7%] lg:pl-[calc(7%+2.25rem)]">
-            <GameFinder onGames={(games, username) => setFound({ games, username })} onPgn={review} />
+            <GameFinder onGames={(games, username, platform) => setFound({ games, username, platform })} onPgn={review} />
           </div>
         </div>
 
         <aside className="flex min-h-0 flex-col gap-4 lg:col-start-2 lg:row-start-3 lg:max-h-[calc(100dvh-22rem)]">
           {found ? (
-            <GameList games={found.games} username={found.username} onPick={review} onClose={() => setFound(null)} />
+            <GameList
+              games={found.games}
+              username={found.username}
+              onPick={review}
+              onClose={() => setFound(null)}
+              playerHref={`/player?p=${found.platform}&u=${encodeURIComponent(found.username)}`}
+            />
           ) : (
             <>
               {/* Graph first: the coach card changes height per move, and a control must not move under the cursor. */}

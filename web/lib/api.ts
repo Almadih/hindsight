@@ -1,5 +1,5 @@
 import type { PositionEval } from "./engine/pool";
-import type { GameSummary, Report } from "./types";
+import type { GameSummary, PlayerProfile, Report } from "./types";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -22,6 +22,10 @@ export type Platform = "chesscom" | "lichess";
 export async function fetchGames(platform: Platform, username: string): Promise<GameSummary[]> {
   const { games } = await request<{ games: GameSummary[] }>(`/api/games/${platform}/${encodeURIComponent(username)}`);
   return games;
+}
+
+export function fetchPlayer(platform: Platform, username: string): Promise<PlayerProfile> {
+  return request<PlayerProfile>(`/api/player/${platform}/${encodeURIComponent(username)}`);
 }
 
 /** A stored review by its game hash (share links), or null if there is none. */

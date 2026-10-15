@@ -24,6 +24,29 @@ async def get_review(db, game_hash: str) -> dict | None:
     return json.loads(row["report_json"]) if row else None
 
 
+async def player_reviews(db, username: str, limit: int = 50) -> list[dict]:
+    """Stored reviews where `username` played either side, newest first (case-insensitive, NOCASE indexes)."""
+    result = await (
+        db.prepare(
+            "SELECT game_hash, white_username, black_username, created_at, report_json FROM analyzed_games"
+            " WHERE white_username = ?1 COLLATE NOCASE OR black_username = ?1 COLLATE NOCASE"
+            " ORDER BY created_at DESC LIMIT ?2"
+        )
+        .bind(username, limit)
+        .all()
+    )
+    return result["results"]
+
+
+async def stored_accuracies(db, hashes: list[str]) -> dict[str, dict]:
+    """{hash: {"white": acc, "black": acc}} for the hashes that have a stored review."""
+    if not hashes:
+        return {}
+    marks = ",".join("?" * len(hashes))
+    result = await db.prepare(f"SELECT game_hash, white_accuracy, black_accuracy FROM analyzed_games WHERE game_hash IN ({marks})").bind(*hashes).all()
+    return {r["game_hash"]: {"white": r["white_accuracy"], "black": r["black_accuracy"]} for r in result["results"]}
+
+
 async def allow_analysis(db, ip: str, now: int) -> bool:
     """Record a new analysis for `ip` if it is under both limits; False means rate limited.
 

@@ -76,6 +76,7 @@ export default function ReviewPage() {
         startFen={state.startFen}
         shared={state.shared}
         shareUrl={state.linkable ? `${location.origin}/review?g=${state.report.hash}` : undefined}
+        initialPly={Number(new URLSearchParams(location.search).get("ply")) || undefined}
         onReanalyze={() => {
           setState({ stage: "lookup" });
           setFresh(true);

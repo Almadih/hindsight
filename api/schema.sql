@@ -25,3 +25,7 @@ CREATE TABLE IF NOT EXISTS analysis_requests (
 
 CREATE INDEX IF NOT EXISTS idx_requests_ip ON analysis_requests(ip, created_at);
 CREATE INDEX IF NOT EXISTS idx_requests_time ON analysis_requests(created_at);
+
+-- Player pages look reviews up by username, case-insensitively.
+CREATE INDEX IF NOT EXISTS idx_white_nocase ON analyzed_games(white_username COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_black_nocase ON analyzed_games(black_username COLLATE NOCASE);

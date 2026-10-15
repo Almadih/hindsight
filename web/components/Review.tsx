@@ -3,6 +3,7 @@
 import { Chess } from "chess.js";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { mySide } from "@/lib/me";
 import { capturedPieces, followUpLine, isGoodRetry, isNotableMove, keyMoments, materialDiff } from "@/lib/review";
 import type { Badge, Report, Side } from "@/lib/types";
 import { Board } from "./Board";
@@ -28,10 +29,17 @@ type Props = {
   shared: boolean;
   /** Set when the review is stored and can be opened by link. */
   shareUrl?: string;
+  /** Open at this ply on the Moves tab (share links to one moment, e.g. a player page's mistake example). */
+  initialPly?: number;
   onReanalyze: () => void;
 };
 
-export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Props) {
+export function Review({ report, startFen, shared, shareUrl, initialPly, onReanalyze }: Props) {
+  // Which side "you" played, from usernames remembered on this device (Review only renders client-side).
+  const [me] = useState(() => mySide(report.headers));
+  const site = (report.headers.Site ?? "").toLowerCase();
+  const platform = site.includes("chess.com") ? "chesscom" : site.includes("lichess") ? "lichess" : null;
+  const myName = me ? report.headers[me === "white" ? "White" : "Black"] : null;
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const copyLink = async () => {
     if (!shareUrl) return;
@@ -55,14 +63,14 @@ export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Prop
     setCopyState(ok ? "copied" : "failed");
     setTimeout(() => setCopyState("idle"), 2500);
   };
-  const [ply, setPly] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [tab, setTab] = useState<Tab>("summary");
+  const [ply, setPly] = useState(() => Math.max(0, Math.min(report.moves.length, initialPly ?? 0)));
+  const [flipped, setFlipped] = useState(me === "black");
+  const [tab, setTab] = useState<Tab>(initialPly ? "moves" : "summary");
   const [mode, setMode] = useState<Mode>(GAME);
   const [picked, setPicked] = useState<string | null>(null);
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
   const last = report.moves.length;
-  const moments = keyMoments(report.moves);
+  const moments = keyMoments(me ? report.moves.filter((m) => m.color === me) : report.moves);
   const notable = report.moves.filter(isNotableMove).map((m) => m.ply);
 
   // Any navigation leaves a follow-up line or retry and returns to the game.
@@ -202,7 +210,7 @@ export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Prop
         onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
         onTouchEnd={onTouchEnd}
       >
-        <PlayerBar side={top} name={names[top]} rating={ratings[top]} material={material} captured={captured[top]} />
+        <PlayerBar side={top} name={me === top ? `${names[top]} (you)` : names[top]} rating={ratings[top]} material={material} captured={captured[top]} />
         <div className="flex gap-2">
           {/* During a retry or an engine line the bar shows the position being explored, not the played move. */}
           <EvalBar ev={mode.kind === "game" ? (move ?? report.start) : evalBefore} flipped={flipped} />
@@ -218,7 +226,7 @@ export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Prop
             />
           </div>
         </div>
-        <PlayerBar side={bottom} name={names[bottom]} rating={ratings[bottom]} material={material} captured={captured[bottom]} />
+        <PlayerBar side={bottom} name={me === bottom ? `${names[bottom]} (you)` : names[bottom]} rating={ratings[bottom]} material={material} captured={captured[bottom]} />
       </section>
 
       {/* On phones the order is: what you need while stepping (tabs, card, list), then the graph and the game header. */}
@@ -232,6 +240,19 @@ export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Prop
               {headers.Result && headers.Result !== "*" ? `${headers.Result} · ` : ""}
               {report.opening ?? "Unknown opening"}
             </p>
+            {me && (
+              <p className="mt-1 text-sm">
+                You played {me === "white" ? "White" : "Black"}
+                {platform && myName && (
+                  <>
+                    {" · "}
+                    <Link href={`/player?p=${platform}&u=${encodeURIComponent(myName)}`} className="font-semibold text-accent hover:underline">
+                      Your player page
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
             <p className="mt-1 text-xs text-muted">
               {!shared ? (
                 "Analyzed in your browser"
@@ -306,7 +327,7 @@ export function Review({ report, startFen, shared, shareUrl, onReanalyze }: Prop
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="order-2 flex min-h-0 flex-1 flex-col gap-3 lg:order-none">
           {tab === "summary" ? (
             <>
-              <SummaryCard report={report} names={names} onJump={go} />
+              <SummaryCard report={report} names={names} me={me} onJump={go} />
               <button onClick={() => go(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
                 {moments.length ? "Start with the first key moment" : "Start review"}
               </button>

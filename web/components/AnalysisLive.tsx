@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PositionEval } from "@/lib/engine/pool";
+import { mySide } from "@/lib/me";
 import { capturedPieces, formatEval, materialDiff, uciToSan } from "@/lib/review";
 import type { Side, WhiteEval } from "@/lib/types";
 import { Board } from "./Board";
@@ -42,6 +43,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   // Count only the contiguous prefix: workers finish out of order, so "done" alone overstates progress.
   const done = frontier;
   const [view, setView] = useState(0);
+  const [flipped] = useState(() => mySide(headers) === "black");
 
   useEffect(() => {
     if (view >= frontier - 1) return;
@@ -67,14 +69,14 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   return (
     <main className="mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] gap-5 p-3 sm:p-5 lg:h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
       <section className="mx-auto flex w-full max-w-[calc(100dvh-6rem)] flex-col gap-1.5 lg:self-center" aria-label="Board">
-        <PlayerBar side="black" name={names.black} rating={ratings.black} material={material} captured={captured.black} />
+        <PlayerBar side={flipped ? "white" : "black"} name={names[flipped ? "white" : "black"]} rating={ratings[flipped ? "white" : "black"]} material={material} captured={captured[flipped ? "white" : "black"]} />
         <div className="flex gap-2">
-          <EvalBar ev={whiteEval(ev)} flipped={false} />
+          <EvalBar ev={whiteEval(ev)} flipped={flipped} />
           <div className="min-w-0 flex-1 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <Board fen={fen} flipped={false} move={null} hintUci={best} />
+            <Board fen={fen} flipped={flipped} move={null} hintUci={best} />
           </div>
         </div>
-        <PlayerBar side="white" name={names.white} rating={ratings.white} material={material} captured={captured.white} />
+        <PlayerBar side={flipped ? "black" : "white"} name={names[flipped ? "black" : "white"]} rating={ratings[flipped ? "black" : "white"]} material={material} captured={captured[flipped ? "black" : "white"]} />
       </section>
 
       <aside className="flex min-w-0 flex-col gap-4 rounded-lg bg-surface p-4 lg:my-5">

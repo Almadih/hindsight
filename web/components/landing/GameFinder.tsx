@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { fetchGames, type Platform } from "@/lib/api";
+import { myUsernames, rememberMe } from "@/lib/me";
 import type { GameSummary } from "@/lib/types";
 
 type Props = {
-  onGames: (games: GameSummary[], username: string) => void;
+  onGames: (games: GameSummary[], username: string, platform: Platform) => void;
   onPgn: (pgn: string) => void;
   inputId?: string;
 };
@@ -18,7 +19,14 @@ const PLATFORMS: { id: Platform; label: string }[] = [
 /** The one action on the page: find your games by username, or paste a PGN. */
 export function GameFinder({ onGames, onPgn, inputId = "username" }: Props) {
   const [platform, setPlatform] = useState<Platform>("chesscom");
-  const [username, setUsername] = useState("");
+  // The last username looked up on this device fills the field until the visitor types (empty while pre-rendering).
+  const remembered = useSyncExternalStore(
+    () => () => {},
+    () => myUsernames()[0] ?? "",
+    () => "",
+  );
+  const [typed, setUsername] = useState<string | null>(null);
+  const username = typed ?? remembered;
   const [pasting, setPasting] = useState(false);
   const [pgn, setPgn] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,7 +40,10 @@ export function GameFinder({ onGames, onPgn, inputId = "username" }: Props) {
     try {
       const games = await fetchGames(platform, name);
       if (games.length === 0) setError(`No standard games for ${name} in the last two months.`);
-      else onGames(games, name);
+      else {
+        rememberMe(name);
+        onGames(games, name, platform);
+      }
     } catch (err) {
       setError((err as Error).message === "player not found" ? `No ${platform === "chesscom" ? "Chess.com" : "Lichess"} player called ${name}.` : (err as Error).message);
     } finally {

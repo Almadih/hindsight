@@ -41,18 +41,20 @@ function gist(text: string | null | undefined): string | null {
   return first.length > 110 ? `${first.slice(0, 107)}…` : first;
 }
 
-type Props = { report: Report; names: Record<Side, string>; onJump: (ply: number) => void };
+type Props = { report: Report; names: Record<Side, string>; me: Side | null; onJump: (ply: number) => void };
 
 /** The game in one screen: the moments that decided it first, then accuracy, rating and every verdict count. */
-export function SummaryCard({ report, names, onJump }: Props) {
+export function SummaryCard({ report, names, me, onJump }: Props) {
   const { accuracy, counts, elo } = report;
-  const moments = keyMoments(report.moves);
+  // When we know who "you" are, lead with your moments; fall back to both sides if you had none.
+  const mine = me ? keyMoments(report.moves.filter((m) => m.color === me)) : [];
+  const moments = mine.length ? mine : keyMoments(report.moves);
   return (
     <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm">
       {moments.length > 0 && (
         <section aria-labelledby="key-moments">
           <h2 id="key-moments" className="mb-2 font-semibold">
-            Key moments
+            {mine.length ? "Your key moments" : "Key moments"}
           </h2>
           <ol className="space-y-1.5">
             {moments.map((m, i) => (
@@ -81,12 +83,12 @@ export function SummaryCard({ report, names, onJump }: Props) {
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 gap-y-1.5 text-center">
         <div className="flex flex-col items-center gap-1">
           <AccuracyRing value={accuracy.white} side="white" />
-          <span className="max-w-full truncate font-semibold">{names.white}</span>
+          <span className="max-w-full truncate font-semibold">{me === "white" ? `${names.white} (you)` : names.white}</span>
         </div>
         <span className="text-xs text-muted">Accuracy</span>
         <div className="flex flex-col items-center gap-1">
           <AccuracyRing value={accuracy.black} side="black" />
-          <span className="max-w-full truncate font-semibold">{names.black}</span>
+          <span className="max-w-full truncate font-semibold">{me === "black" ? `${names.black} (you)` : names.black}</span>
         </div>
         <span className="rounded bg-raised py-1 text-base font-semibold tabular-nums">{elo.white ?? "–"}</span>
         <span className="text-xs text-muted">Game rating</span>
