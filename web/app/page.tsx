@@ -12,7 +12,7 @@ import { GameList } from "@/components/landing/GameList";
 import { VerdictLadder } from "@/components/landing/VerdictLadder";
 import { DEMO } from "@/lib/demo-game";
 import { Icon } from "@/components/Icon";
-import { BADGE, NOTABLE } from "@/lib/review";
+import { BADGE, keyMoments, NOTABLE } from "@/lib/review";
 import { playMove, primeSounds } from "@/lib/sfx";
 import type { GameSummary } from "@/lib/types";
 
@@ -25,13 +25,8 @@ const KEY_MS = 3400;
 const END_MS = 5600;
 // Reduced motion shows one still frame: the game's most famous moment.
 const STILL_PLY = DEMO.moves.findIndex((m) => m.san === "Qb8+") + 1;
-const PRIORITY = ["blunder", "miss", "mistake", "brilliant", "great"];
-// The three coached moments that decided the game, in game order.
-const TURNING = DEMO.moves
-  .filter((m) => m.coach && PRIORITY.includes(m.badge))
-  .sort((a, b) => PRIORITY.indexOf(a.badge) - PRIORITY.indexOf(b.badge))
-  .slice(0, 3)
-  .sort((a, b) => a.ply - b.ply);
+// The three coached moments that decided the game, chosen the same way as the review page's Key moments.
+const TURNING = keyMoments(DEMO.moves.filter((m) => m.coach), 3);
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const subscribeReduced = (cb: () => void) => {

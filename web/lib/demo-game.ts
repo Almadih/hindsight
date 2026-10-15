@@ -2,7 +2,7 @@
 // can replay it without running an engine. Regenerate by re-fetching POST /api/analyze for the same PGN.
 import type { ReviewMove, WhiteEval } from "./types";
 
-type DemoMove = Pick<ReviewMove, "ply" | "color" | "san" | "uci" | "fen" | "badge" | "evalWhite" | "mateWhite" | "bestUci" | "coach">;
+type DemoMove = Pick<ReviewMove, "ply" | "color" | "san" | "uci" | "fen" | "badge" | "wBefore" | "wAfter" | "evalWhite" | "mateWhite" | "bestUci" | "coach">;
 
 export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: number; black: number }; moves: DemoMove[] } = {
  "opening": "C41 Philidor Defense",
@@ -11,8 +11,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
   "mateWhite": null
  },
  "accuracy": {
-  "white": 96.8,
-  "black": 85.7
+  "white": 96.2,
+  "black": 76.6
  },
  "moves": [
   {
@@ -22,6 +22,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "e2e4",
    "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
    "badge": "book",
+   "wBefore": 52.6,
+   "wAfter": 52.3,
    "evalWhite": 0.25,
    "mateWhite": null,
    "bestUci": "e2e4",
@@ -34,6 +36,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "e7e5",
    "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
    "badge": "book",
+   "wBefore": 47.7,
+   "wAfter": 48.3,
    "evalWhite": 0.19,
    "mateWhite": null,
    "bestUci": "e7e5",
@@ -46,6 +50,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "g1f3",
    "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
    "badge": "book",
+   "wBefore": 51.7,
+   "wAfter": 52.9,
    "evalWhite": 0.31,
    "mateWhite": null,
    "bestUci": "g1f3",
@@ -58,6 +64,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d7d6",
    "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3",
    "badge": "book",
+   "wBefore": 47.1,
+   "wAfter": 44.9,
    "evalWhite": 0.56,
    "mateWhite": null,
    "bestUci": "b8c6",
@@ -70,7 +78,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d2d4",
    "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3",
    "badge": "book",
-   "evalWhite": 0.42,
+   "wBefore": 55.1,
+   "wAfter": 54.2,
+   "evalWhite": 0.46,
    "mateWhite": null,
    "bestUci": "d2d4",
    "coach": null
@@ -82,9 +92,11 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "c8g4",
    "fen": "rn1qkbnr/ppp2ppp/3p4/4p3/3PP1b1/5N2/PPP2PPP/RNBQKB1R w KQkq - 1 4",
    "badge": "inaccuracy",
-   "evalWhite": 1.11,
+   "wBefore": 45.8,
+   "wAfter": 40.5,
+   "evalWhite": 1.04,
    "mateWhite": null,
-   "bestUci": "e5d4",
+   "bestUci": "g8f6",
    "coach": null
   },
   {
@@ -94,6 +106,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d4e5",
    "fen": "rn1qkbnr/ppp2ppp/3p4/4P3/4P1b1/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 4",
    "badge": "best",
+   "wBefore": 59.5,
+   "wAfter": 59.6,
    "evalWhite": 1.06,
    "mateWhite": null,
    "bestUci": "c1e3",
@@ -106,7 +120,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "g4f3",
    "fen": "rn1qkbnr/ppp2ppp/3p4/4P3/4P3/5b2/PPP2PPP/RNBQKB1R w KQkq - 0 5",
    "badge": "good",
-   "evalWhite": 1.52,
+   "wBefore": 40.4,
+   "wAfter": 37.2,
+   "evalWhite": 1.42,
    "mateWhite": null,
    "bestUci": "b8c6",
    "coach": null
@@ -118,6 +134,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d1f3",
    "fen": "rn1qkbnr/ppp2ppp/3p4/4P3/4P3/5Q2/PPP2PPP/RNB1KB1R b KQkq - 0 5",
    "badge": "best",
+   "wBefore": 62.8,
+   "wAfter": 64.1,
    "evalWhite": 1.58,
    "mateWhite": null,
    "bestUci": "d1f3",
@@ -130,7 +148,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d6e5",
    "fen": "rn1qkbnr/ppp2ppp/8/4p3/4P3/5Q2/PPP2PPP/RNB1KB1R w KQkq - 0 6",
    "badge": "best",
-   "evalWhite": 1.39,
+   "wBefore": 35.9,
+   "wAfter": 36.0,
+   "evalWhite": 1.56,
    "mateWhite": null,
    "bestUci": "d6e5",
    "coach": null
@@ -141,10 +161,12 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Bc4",
    "uci": "f1c4",
    "fen": "rn1qkbnr/ppp2ppp/8/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R b KQkq - 1 6",
-   "badge": "best",
-   "evalWhite": 1.4,
+   "badge": "excellent",
+   "wBefore": 64.0,
+   "wAfter": 62.1,
+   "evalWhite": 1.34,
    "mateWhite": null,
-   "bestUci": "f1c4",
+   "bestUci": "f3b3",
    "coach": null
   },
   {
@@ -153,11 +175,13 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Nf6",
    "uci": "g8f6",
    "fen": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/5Q2/PPP2PPP/RNB1K2R w KQkq - 2 7",
-   "badge": "inaccuracy",
-   "evalWhite": 2.47,
+   "badge": "mistake",
+   "wBefore": 37.9,
+   "wAfter": 26.6,
+   "evalWhite": 2.75,
    "mateWhite": null,
    "bestUci": "d8d7",
-   "coach": null
+   "coach": "Duke Karl / Count Isouard's Nf6 does not prepare to develop other pieces, while Qd7 would have done so."
   },
   {
    "ply": 13,
@@ -166,7 +190,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "f3b3",
    "fen": "rn1qkb1r/ppp2ppp/5n2/4p3/2B1P3/1Q6/PPP2PPP/RNB1K2R b KQkq - 3 7",
    "badge": "best",
-   "evalWhite": 2.66,
+   "wBefore": 73.4,
+   "wAfter": 70.5,
+   "evalWhite": 2.36,
    "mateWhite": null,
    "bestUci": "f3b3",
    "coach": null
@@ -177,8 +203,10 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Qe7",
    "uci": "d8e7",
    "fen": "rn2kb1r/ppp1qppp/5n2/4p3/2B1P3/1Q6/PPP2PPP/RNB1K2R w KQkq - 4 8",
-   "badge": "excellent",
-   "evalWhite": 3.05,
+   "badge": "good",
+   "wBefore": 29.5,
+   "wAfter": 24.8,
+   "evalWhite": 3.01,
    "mateWhite": null,
    "bestUci": "f8c5",
    "coach": null
@@ -189,8 +217,10 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Nc3",
    "uci": "b1c3",
    "fen": "rn2kb1r/ppp1qppp/5n2/4p3/2B1P3/1QN5/PPP2PPP/R1B1K2R b KQkq - 5 8",
-   "badge": "inaccuracy",
-   "evalWhite": 2.08,
+   "badge": "best",
+   "wBefore": 75.2,
+   "wAfter": 74.2,
+   "evalWhite": 2.87,
    "mateWhite": null,
    "bestUci": "b3b7",
    "coach": null
@@ -202,7 +232,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "c7c6",
    "fen": "rn2kb1r/pp2qppp/2p2n2/4p3/2B1P3/1QN5/PPP2PPP/R1B1K2R w KQkq - 0 9",
    "badge": "best",
-   "evalWhite": 2.38,
+   "wBefore": 25.8,
+   "wAfter": 28.9,
+   "evalWhite": 2.45,
    "mateWhite": null,
    "bestUci": "c7c6",
    "coach": null
@@ -214,7 +246,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "c1g5",
    "fen": "rn2kb1r/pp2qppp/2p2n2/4p1B1/2B1P3/1QN5/PPP2PPP/R3K2R b KQkq - 1 9",
    "badge": "best",
-   "evalWhite": 2.44,
+   "wBefore": 71.1,
+   "wAfter": 71.6,
+   "evalWhite": 2.51,
    "mateWhite": null,
    "bestUci": "c1g5",
    "coach": null
@@ -225,11 +259,13 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "b5",
    "uci": "b7b5",
    "fen": "rn2kb1r/p3qppp/2p2n2/1p2p1B1/2B1P3/1QN5/PPP2PPP/R3K2R w KQkq - 0 10",
-   "badge": "inaccuracy",
-   "evalWhite": 3.82,
+   "badge": "mistake",
+   "wBefore": 28.4,
+   "wAfter": 15.8,
+   "evalWhite": 4.54,
    "mateWhite": null,
-   "bestUci": "e7c7",
-   "coach": null
+   "bestUci": "b8a6",
+   "coach": "Duke Karl / Count Isouard's b5 allows Paul Morphy's Nxb5, winning the pawn on b5."
   },
   {
    "ply": 19,
@@ -238,10 +274,12 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "c3b5",
    "fen": "rn2kb1r/p3qppp/2p2n2/1N2p1B1/2B1P3/1Q6/PPP2PPP/R3K2R b KQkq - 0 10",
    "badge": "brilliant",
-   "evalWhite": 4.17,
+   "wBefore": 84.2,
+   "wAfter": 84.2,
+   "evalWhite": 4.54,
    "mateWhite": null,
    "bestUci": "c3b5",
-   "coach": "This move was brilliant as it offers material, increasing White's winning chances."
+   "coach": "Paul Morphy's Nxb5 wins the pawn and offers material, expecting a response like Qb4+."
   },
   {
    "ply": 20,
@@ -250,7 +288,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "c6b5",
    "fen": "rn2kb1r/p3qppp/5n2/1p2p1B1/2B1P3/1Q6/PPP2PPP/R3K2R w KQkq - 0 11",
    "badge": "inaccuracy",
-   "evalWhite": 6.65,
+   "wBefore": 15.8,
+   "wAfter": 10.1,
+   "evalWhite": 5.94,
    "mateWhite": null,
    "bestUci": "e7b4",
    "coach": null
@@ -261,11 +301,13 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Bxb5+",
    "uci": "c4b5",
    "fen": "rn2kb1r/p3qppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/R3K2R b KQkq - 0 11",
-   "badge": "great",
-   "evalWhite": 6.96,
+   "badge": "best",
+   "wBefore": 89.9,
+   "wAfter": 93.1,
+   "evalWhite": 7.08,
    "mateWhite": null,
    "bestUci": "c4b5",
-   "coach": "This move was great, further improving White's position and increasing their winning chances."
+   "coach": null
   },
   {
    "ply": 22,
@@ -274,7 +316,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "b8d7",
    "fen": "r3kb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/R3K2R w KQkq - 1 12",
    "badge": "best",
-   "evalWhite": 6.67,
+   "wBefore": 6.9,
+   "wAfter": 8.4,
+   "evalWhite": 6.5,
    "mateWhite": null,
    "bestUci": "e8d8",
    "coach": null
@@ -286,7 +330,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "e1c1",
    "fen": "r3kb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR3R b kq - 2 12",
    "badge": "best",
-   "evalWhite": 6.99,
+   "wBefore": 91.6,
+   "wAfter": 93.0,
+   "evalWhite": 7.01,
    "mateWhite": null,
    "bestUci": "e1c1",
    "coach": null
@@ -298,9 +344,11 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "a8d8",
    "fen": "3rkb1r/p2nqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR3R w k - 3 13",
    "badge": "best",
-   "evalWhite": 7.18,
+   "wBefore": 7.0,
+   "wAfter": 7.1,
+   "evalWhite": 6.99,
    "mateWhite": null,
-   "bestUci": "e7c5",
+   "bestUci": "a8b8",
    "coach": null
   },
   {
@@ -310,7 +358,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d1d7",
    "fen": "3rkb1r/p2Rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2K4R b k - 0 13",
    "badge": "best",
-   "evalWhite": 7.54,
+   "wBefore": 92.9,
+   "wAfter": 93.9,
+   "evalWhite": 7.41,
    "mateWhite": null,
    "bestUci": "d1d7",
    "coach": null
@@ -322,7 +372,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d8d7",
    "fen": "4kb1r/p2rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2K4R w k - 0 14",
    "badge": "best",
-   "evalWhite": 7.93,
+   "wBefore": 6.1,
+   "wAfter": 6.3,
+   "evalWhite": 7.33,
    "mateWhite": null,
    "bestUci": "f6d7",
    "coach": null
@@ -333,11 +385,13 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Rd1",
    "uci": "h1d1",
    "fen": "4kb1r/p2rqppp/5n2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 b k - 1 14",
-   "badge": "great",
-   "evalWhite": 6.9,
+   "badge": "best",
+   "wBefore": 93.7,
+   "wAfter": 94.6,
+   "evalWhite": 7.75,
    "mateWhite": null,
    "bestUci": "h1d1",
-   "coach": "This move was great, although it slightly decreased White's winning chances, it still maintained a strong position."
+   "coach": null
   },
   {
    "ply": 28,
@@ -345,10 +399,12 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Qe6",
    "uci": "e7e6",
    "fen": "4kb1r/p2r1ppp/4qn2/1B2p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 2 15",
-   "badge": "inaccuracy",
-   "evalWhite": 12.62,
+   "badge": "good",
+   "wBefore": 5.4,
+   "wAfter": 1.5,
+   "evalWhite": 11.33,
    "mateWhite": null,
-   "bestUci": "e7c5",
+   "bestUci": "e7b4",
    "coach": null
   },
   {
@@ -358,7 +414,9 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "b5d7",
    "fen": "4kb1r/p2B1ppp/4qn2/4p1B1/4P3/1Q6/PPP2PPP/2KR4 b k - 0 15",
    "badge": "best",
-   "evalWhite": 11.01,
+   "wBefore": 98.5,
+   "wAfter": 98.4,
+   "evalWhite": 11.27,
    "mateWhite": null,
    "bestUci": "b5d7",
    "coach": null
@@ -370,10 +428,12 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "f6d7",
    "fen": "4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 0 16",
    "badge": "blunder",
+   "wBefore": 1.6,
+   "wAfter": 0.0,
    "evalWhite": 99.8,
    "mateWhite": 2,
    "bestUci": "e6d7",
-   "coach": "This move was a blunder as it allows mate in 2, starting with Qb8+, and failed to play the engine's suggested Qxd7."
+   "coach": "Duke Karl / Count Isouard's Nxd7 allows Paul Morphy to play Qb8+ next, starting a sequence that leads to mate."
   },
   {
    "ply": 31,
@@ -381,11 +441,13 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "san": "Qb8+",
    "uci": "b3b8",
    "fen": "1Q2kb1r/p2n1ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 b k - 1 16",
-   "badge": "great",
+   "badge": "best",
+   "wBefore": 100.0,
+   "wAfter": 100.0,
    "evalWhite": 99.9,
    "mateWhite": 1,
    "bestUci": "b3b8",
-   "coach": "This move was great as it offers material and takes advantage of Black's previous blunder."
+   "coach": null
   },
   {
    "ply": 32,
@@ -394,6 +456,8 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d7b8",
    "fen": "1n2kb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2KR4 w k - 0 17",
    "badge": "best",
+   "wBefore": 0.0,
+   "wAfter": 0.0,
    "evalWhite": 99.9,
    "mateWhite": 1,
    "bestUci": "d7b8",
@@ -406,10 +470,12 @@ export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: numbe
    "uci": "d1d8",
    "fen": "1n1Rkb1r/p4ppp/4q3/4p1B1/4P3/8/PPP2PPP/2K5 b k - 1 17",
    "badge": "great",
+   "wBefore": 100.0,
+   "wAfter": 100.0,
    "evalWhite": 100.0,
    "mateWhite": 0,
    "bestUci": "d1d8",
-   "coach": "This move was great as it delivers checkmate, ending the game."
+   "coach": "Paul Morphy's Rd8# delivers checkmate."
   }
  ]
 };
