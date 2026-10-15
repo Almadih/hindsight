@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mySide } from "@/lib/me";
 import { BADGE, badgeText, canRetry, capturedPieces, decidingMoments, followUpLine, gist, isGoodRetry, materialDiff, personalize } from "@/lib/review";
-import type { Badge, Report, ReviewMove, Side } from "@/lib/types";
+import type { Report, ReviewMove, Side } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 import { Board } from "./Board";
 import { EvalBar } from "./EvalBar";
@@ -22,8 +22,6 @@ type Tab = "summary" | "moves";
 const LINE_STEP_MS = 700;
 const GAME: Mode = { kind: "game" };
 const END: Mode = { kind: "end" };
-// The moments worth a full-strength board reaction; everything else stays on the quiet tier.
-const DECISIVE = new Set<Badge>(["brilliant", "great", "blunder", "miss"]);
 
 type Props = {
   report: Report;
@@ -308,7 +306,7 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
               // In a retry, mark the opponent's move you're answering.
               lastUci={mode.kind === "retry" && !mode.feedback?.ok && ply > 1 ? report.moves[ply - 2].uci : undefined}
               selected={mode.kind === "retry" ? picked : null}
-              fx={{ intensity: boardMove && DECISIVE.has(boardMove.badge) ? "epic" : "subtle", prevFen: fenBefore }}
+              fx={{ intensity: "subtle", prevFen: fenBefore }}
             />
           </div>
         </div>
