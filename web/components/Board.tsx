@@ -64,51 +64,62 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hin
     );
   }, [shake]);
 
+  // The board library makes every piece a tab stop. Off-retry nothing on it is interactive, so the board is one
+  // labelled image instead of 32 unnamed buttons.
+  const interactive = Boolean(onMove || onSquareClick);
   return (
-    <div ref={wrap} className="relative">
-      <Chessboard
-        options={{
-          id,
-          pieces: PIECES,
-          position: fen,
-          boardOrientation: flipped ? "black" : "white",
-          allowDragging: Boolean(onMove),
-          onPieceDrop: ({ sourceSquare, targetSquare }) => Boolean(onMove && targetSquare && onMove(sourceSquare, targetSquare)),
-          onSquareClick: onSquareClick ? ({ square }) => onSquareClick(square) : undefined,
-          animationDurationInMs: epic ? 260 : 180,
-          lightSquareStyle: LIGHT,
-          darkSquareStyle: DARK,
-          arrowOptions: ARROWS,
-          arrows: showBest
-            ? [{ startSquare: move.bestUci!.slice(0, 2), endSquare: move.bestUci!.slice(2, 4), color: BEST_ARROW }]
-            : !move && hintUci
-              ? [{ startSquare: hintUci.slice(0, 2), endSquare: hintUci.slice(2, 4), color: BEST_ARROW }]
-              : [],
-          // A custom squareRenderer replaces the wrapper that would apply `squareStyles`, so tint here instead.
-          squareRenderer: ({ square, children }) => (
-            <div
-              className="relative size-full"
-              style={
-                square === selected
-                  ? { boxShadow: "inset 0 0 0 4px rgb(129 182 76 / 0.95)", backgroundColor: "rgb(129 182 76 / 0.25)" }
-                  : tint && (square === from || square === to)
-                    ? tint
-                    : undefined
-              }
-            >
-              {children}
-              {move && square === to && (
-                <BadgeIcon
-                  key={move.ply}
-                  badge={move.badge}
-                  size={40}
-                  className={`${epic ? "badge-slam" : "badge-pop"} pointer-events-none absolute z-30 h-auto min-w-5 ${badgeBox}`}
-                />
-              )}
-            </div>
-          ),
-        }}
-      />
+    <div
+      ref={wrap}
+      className="relative"
+      role={interactive ? undefined : "img"}
+      aria-label={interactive ? undefined : move ? `Board after ${move.san} (${BADGE[move.badge].label})` : "Chess board"}
+    >
+      {/* inert also hides a node's own label, so it goes on this inner wrapper, not the labelled one. */}
+      <div inert={!interactive}>
+        <Chessboard
+          options={{
+            id,
+            pieces: PIECES,
+            position: fen,
+            boardOrientation: flipped ? "black" : "white",
+            allowDragging: Boolean(onMove),
+            onPieceDrop: ({ sourceSquare, targetSquare }) => Boolean(onMove && targetSquare && onMove(sourceSquare, targetSquare)),
+            onSquareClick: onSquareClick ? ({ square }) => onSquareClick(square) : undefined,
+            animationDurationInMs: epic ? 260 : 180,
+            lightSquareStyle: LIGHT,
+            darkSquareStyle: DARK,
+            arrowOptions: ARROWS,
+            arrows: showBest
+              ? [{ startSquare: move.bestUci!.slice(0, 2), endSquare: move.bestUci!.slice(2, 4), color: BEST_ARROW }]
+              : !move && hintUci
+                ? [{ startSquare: hintUci.slice(0, 2), endSquare: hintUci.slice(2, 4), color: BEST_ARROW }]
+                : [],
+            // A custom squareRenderer replaces the wrapper that would apply `squareStyles`, so tint here instead.
+            squareRenderer: ({ square, children }) => (
+              <div
+                className="relative size-full"
+                style={
+                  square === selected
+                    ? { boxShadow: "inset 0 0 0 4px rgb(129 182 76 / 0.95)", backgroundColor: "rgb(129 182 76 / 0.25)" }
+                    : tint && (square === from || square === to)
+                      ? tint
+                      : undefined
+                }
+              >
+                {children}
+                {move && square === to && (
+                  <BadgeIcon
+                    key={move.ply}
+                    badge={move.badge}
+                    size={40}
+                    className={`${epic ? "badge-slam" : "badge-pop"} pointer-events-none absolute z-30 h-auto min-w-5 ${badgeBox}`}
+                  />
+                )}
+              </div>
+            ),
+          }}
+        />
+      </div>
       {fx && move && <MoveFX key={move.ply} move={move} prevFen={fx.prevFen} fen={fen} flipped={flipped} intensity={fx.intensity} />}
     </div>
   );

@@ -76,6 +76,14 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   const { moments, mine } = decidingMoments(report.moves, me);
   const momentPlies = moments.map((m) => m.ply);
 
+  // On phones the board sits above the panel; after navigating from far down the page, bring it back into view.
+  const boardRef = useRef<HTMLElement>(null);
+  const showBoard = () => {
+    const el = boardRef.current;
+    if (el && el.getBoundingClientRect().top < 0) {
+      el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+  };
   // Any navigation leaves a follow-up line, retry or the end card and returns to the game.
   const go = (p: number) => {
     setMode(GAME);
@@ -83,6 +91,7 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     setRevealed(false);
     setPly(Math.max(0, Math.min(last, p)));
     setTab("moves");
+    showBoard();
   };
   // Next/Previous walk the key moments only; after the last one the review ends on a recap.
   const nextMoment = mode.kind === "end" ? undefined : momentPlies.find((p) => p > ply);
@@ -93,22 +102,10 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     else if (canFinish) {
       setMode(END);
       setTab("moves");
+      showBoard();
     }
   };
   const toPrev = () => prevMoment !== undefined && go(prevMoment);
-
-  // On phones the board sits above the panel; after a jump from far down the page, bring it back into view.
-  const boardRef = useRef<HTMLElement>(null);
-  const showBoard = () => {
-    const el = boardRef.current;
-    if (el && el.getBoundingClientRect().top < 0) {
-      el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    }
-  };
-  const jumpTo = (p: number) => {
-    go(p);
-    showBoard();
-  };
 
   // Keyboard: arrows/Home/End step, N/P walk the key moments, F flips. Ignored while typing or on the tabs.
   // Re-subscribed every render so the handler always sees the current ply and mode.
@@ -357,8 +354,8 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="order-2 flex min-h-0 flex-1 flex-col gap-3 lg:order-none">
           {tab === "summary" ? (
             <>
-              <SummaryCard report={report} names={names} me={me} moments={moments} mine={mine} onJump={jumpTo} />
-              <button onClick={() => jumpTo(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
+              <SummaryCard report={report} names={names} me={me} moments={moments} mine={mine} onJump={go} />
+              <button onClick={() => go(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
                 {moments.length ? "Start with the first key moment" : "Start review"}
               </button>
             </>

@@ -21,4 +21,11 @@ assert.equal(quiet.fens.length, 5);
 // Quiet line that ends on a capture: show the recapture too (7. exd5 Nxd5 8. O-O Bxc3 9. bxc3).
 const recapture = followUpLine("r1bqk2r/ppp2ppp/2n2n2/3p4/1b2P3/2NB1N2/PPPP1PPP/R1BQK2R w KQkq - 0 7", ["e4d5", "f6d5", "e1g1", "b4c3", "b2c3", "e8g8"]);
 assert.deepEqual(recapture.sans, ["exd5", "Nxd5", "O-O", "Bxc3", "bxc3"]);
+// The real 7.Bd2 case: the recapture comes after an in-between move, at ply 7.
+const pv = ["e4d5", "f6d5", "e1g1", "b4c3", "d1e2", "c8e6", "b2c3", "d8f6", "c1d2", "e8c8"];
+const bd2 = "r1bqk2r/ppp2ppp/2n2n2/3p4/1b1PPp2/2NB1N2/PPP3PP/R1BQK2R w KQkq - 0 7";
+assert.deepEqual(followUpLine(bd2, pv).sans, ["exd5", "Nxd5", "O-O", "Bxc3", "Qe2+", "Be6", "bxc3"]);
+
+// PV too short to win the piece back: stop before it was lost.
+assert.deepEqual(followUpLine(bd2, pv.slice(0, 5)).sans, ["exd5", "Nxd5", "O-O"]);
 console.log("followUpLine ok");

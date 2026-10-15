@@ -40,10 +40,16 @@ export function keyMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wBefore
     .sort((a, b) => a.ply - b.ply);
 }
 
-/** Your key moments when we know your side (falling back to both sides if you had none), else both sides'. */
+/**
+ * Your key moments when we know your side, plus the opponent's single biggest swing if it outranks one of
+ * yours (a game they threw is still what decided it). Both sides' when your side is unknown or you had none.
+ */
 export function decidingMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wBefore" | "wAfter" | "color">>(moves: M[], me: Side | null) {
-  const mine = me ? keyMoments(moves.filter((m) => m.color === me)) : [];
-  return { moments: mine.length ? mine : keyMoments(moves), mine: mine.length > 0 };
+  const own = me ? moves.filter((m) => m.color === me) : [];
+  const theirs = keyMoments(moves.filter((m) => m.color !== me), 1);
+  const picked = me ? keyMoments([...own, ...theirs]) : [];
+  const mine = picked.some((m) => m.color === me);
+  return { moments: mine ? picked : keyMoments(moves), mine };
 }
 
 /** Errors with an engine alternative can be retried on the board. */
@@ -120,6 +126,7 @@ export function isGoodRetry(move: ReviewMove, uci: string): boolean {
 
 const LINE_MAX = 6; // plies: never look further than three moves each
 const LINE_QUIET = 4; // plies shown when nothing decisive happens
+const LINE_REACH = 8; // plies a line may run on to finish a trade (7.Bd2: ...Bxc3 Qe2 Be6 bxc3)
 
 /**
  * The short, high-impact part of an engine line, the way a coach would show it: up to checkmate, a promotion,
@@ -131,7 +138,7 @@ export function followUpLine(fen: string, pv: string[]): { fens: string[]; sans:
   const start = materialDiff(fen) * sign;
   const fens = [fen];
   const sans: string[] = [];
-  for (const uci of pv.slice(0, LINE_MAX)) {
+  for (const uci of pv.slice(0, LINE_REACH)) {
     let move;
     try {
       move = chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
@@ -142,12 +149,18 @@ export function followUpLine(fen: string, pv: string[]): { fens: string[]; sans:
     sans.push(move.san);
     const next = pv[sans.length];
     const exchangeOver = !next || !chess.get(next.slice(2, 4) as Parameters<typeof chess.get>[0]);
-    if (chess.isCheckmate() || move.promotion || (materialDiff(chess.fen()) * sign - start >= 2 && exchangeOver)) {
+    const decisive = chess.isCheckmate() || move.promotion || (materialDiff(chess.fen()) * sign - start >= 2 && exchangeOver);
+    if (decisive && sans.length <= LINE_MAX) {
       return { fens, sans };
     }
   }
-  // Never stop mid-exchange: run on while the next move is a capture (Bxc3 without bxc3 looks like a lost piece).
+  // Never stop mid-trade or behind: run on while a capture is pending or the side to move is down on where it
+  // started (Bxc3 without the later bxc3 looks like the best line loses a knight).
+  const behind = (i: number) => materialDiff(fens[i]) * sign < start;
+  const capturePending = (i: number) => Boolean(new Chess(fens[i]).get(pv[i].slice(2, 4) as Parameters<typeof chess.get>[0]));
   let n = Math.min(LINE_QUIET, sans.length);
-  while (n < sans.length && new Chess(fens[n]).get(pv[n].slice(2, 4) as Parameters<typeof chess.get>[0])) n++;
+  while (n < sans.length && (behind(n) || capturePending(n))) n++;
+  // Still behind when the PV runs out: end before the material went rather than show a losing-looking line.
+  while (n > 1 && behind(n)) n--;
   return { fens: fens.slice(0, n + 1), sans: sans.slice(0, n) };
 }
