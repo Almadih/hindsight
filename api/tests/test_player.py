@@ -33,6 +33,7 @@ def test_themes_count_only_my_bad_moves_with_first_example():
         move(6, "black", "best", ["Qd8 leaves the rook on a8 hanging"]),  # not a bad move: ignored
         move(5, "white", "blunder", ["Nc3 leaves the knight on c3 hanging"]),  # opponent's move: ignored
         move(8, "black", "miss", ["Qxf2 would have started mate in 1"]),
+        move(10, "black", "miss", ["d5 was stronger"]),
     ]
     out = summarize([row("h1", "Alice", "Bob", "1-0", moves)], "bob")
     themes = {t["label"]: (t["count"], t["example"]) for t in out["themes"]}
@@ -41,7 +42,7 @@ def test_themes_count_only_my_bad_moves_with_first_example():
         "Let a capture through": (1, {"hash": "h1", "ply": 2}),
         "Walked into mate": (1, {"hash": "h1", "ply": 4}),
         "Missed a mate": (1, {"hash": "h1", "ply": 8}),
-        "Didn't punish a mistake": (1, {"hash": "h1", "ply": 8}),
+        "Didn't punish a mistake": (1, {"hash": "h1", "ply": 10}),
     }
 
 

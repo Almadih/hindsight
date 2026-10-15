@@ -50,7 +50,10 @@ def motifs(board: chess.Board, move: chess.Move) -> list[str]:
         key=lambda t: -VALUE[t],
     )
     if len(targets) >= 2:
-        facts.append(f"{san} forks the {NAME[targets[0]]} and the {NAME[targets[1]]}")
+        if targets[0] == targets[1]:
+            facts.append(f"{san} forks the two {NAME[targets[0]]}s")
+        else:
+            facts.append(f"{san} forks the {NAME[targets[0]]} and the {NAME[targets[1]]}")
 
     pinned_before = {sq for sq in _pieces(board, them) if board.is_pinned(them, sq)}
     pinned = [sq for sq in _pieces(after, them) if after.is_pinned(them, sq) and sq not in pinned_before]

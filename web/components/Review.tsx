@@ -127,10 +127,9 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   };
   const toPrev = () => prevMoment !== undefined && go(prevMoment);
 
-  // Keyboard: arrows/Home/End step, N/P walk the key moments, F flips, Escape leaves a retry, line or the recap. Ignored while typing or on the tabs.
-  // Re-subscribed every render so the handler always sees the current ply and mode.
+  const onKeyRef = useRef<(e: KeyboardEvent) => void>(() => {});
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    onKeyRef.current = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (target?.closest("input, textarea, select, [role=tablist]") || e.ctrlKey || e.metaKey || e.altKey) return;
       const step = { ArrowLeft: -1, ArrowRight: 1, Home: -Infinity, End: Infinity }[e.key];
@@ -148,9 +147,13 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         setMode(GAME);
       }
     };
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => onKeyRef.current(e);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, []);
 
   // Play the engine line out one move at a time, until the user steps it by hand.
   useEffect(() => {
@@ -160,11 +163,15 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
   }, [mode]);
 
   const move = ply ? report.moves[ply - 1] : null;
+  const lastMoveRef = useRef(move);
   const fenBefore = ply > 1 ? report.moves[ply - 2].fen : startFen;
   const evalBefore = ply > 1 ? report.moves[ply - 2] : report.start;
 
   useEffect(() => {
-    if (sound && move && mode.kind === "game") playMove(move);
+    if (sound && move && mode.kind === "game" && lastMoveRef.current !== move) {
+      playMove(move);
+    }
+    lastMoveRef.current = move;
   }, [sound, move, mode.kind]);
 
   useEffect(() => {
@@ -196,8 +203,10 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     if (!move || mode.kind !== "retry" || mode.feedback?.ok) return false;
     const chess = new Chess(mode.fen);
     let played;
+    const bestUci = move.bestUci;
+    const promotion = bestUci && bestUci.startsWith(from + to) && bestUci.length === 5 ? bestUci[4] : "q";
     try {
-      played = chess.move({ from, to, promotion: "q" });
+      played = chess.move({ from, to, promotion });
     } catch {
       return false; // illegal: the piece snaps back
     }

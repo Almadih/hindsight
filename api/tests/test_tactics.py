@@ -17,6 +17,12 @@ def test_knight_fork():
     assert "Nc7+ forks the king and the rook" in motifs(b, b.parse_san("Nc7+"))
 
 
+def test_fork_two_rooks():
+    b = board("k2r1r2/8/8/6N1/8/8/8/7K w - - 0 1")
+    assert motifs(b, b.parse_san("Ne6")) == ["Ne6 forks the two rooks"]
+
+
+
 def test_new_pin():
     b = board("4k3/8/2n5/8/8/8/8/4KB2 w - - 0 1")
     assert motifs(b, b.parse_san("Bb5")) == ["Bb5 pins the knight on c6 to the king"]

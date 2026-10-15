@@ -42,7 +42,7 @@ Schema changes: `uv run pywrangler d1 execute DB --remote --file schema.sql` (st
 ## Third-party assets
 
 - Chess pieces: Staunty by sadsnake1, CC BY-NC-SA 4.0 (`web/public/pieces/staunty/LICENSE.md`); non-commercial only.
-- Sounds: Pixabay Content License (`web/public/sfx/LICENSE.md`).
+- Sounds: Chess piece movement sound effects (`web/public/sfx/LICENSE.md`).
 - Opening names: lichess-org/chess-openings.
 
 Hindsight is independent and not affiliated with Chess.com or Lichess.

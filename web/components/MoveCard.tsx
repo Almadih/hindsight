@@ -122,7 +122,7 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, solved, you
     );
   }
 
-  const best = move.bestUci && move.bestUci !== move.uci && move.badge !== "book" ? uciToSan(fenBefore, move.bestUci) : null;
+  const best = move.bestUci && move.bestUci !== move.uci && move.badge !== "book" && move.badge !== "best" ? uciToSan(fenBefore, move.bestUci) : null;
   const evalText = move.mateWhite !== null ? describeEval(move) : formatEval(move);
   const bad = canRetry(move);
   // Don't spoil the puzzle: the best move and the coach's explanation wait until you try or ask.

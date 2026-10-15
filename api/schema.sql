@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS analyzed_games (
 );
 
 CREATE INDEX IF NOT EXISTS idx_players ON analyzed_games(white_username, black_username);
+CREATE INDEX IF NOT EXISTS idx_games_created ON analyzed_games(created_at);
 
 -- One row per new analysis, for the per-IP limits in store.allow_analysis. Rows older than a day are pruned.
 CREATE TABLE IF NOT EXISTS analysis_requests (

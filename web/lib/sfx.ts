@@ -4,11 +4,11 @@ import type { Badge } from "./types";
 type Sound = "move" | "capture" | "castle" | "check" | "promote";
 
 const FILES: Record<Sound, { src: string; volume: number }> = {
-  move: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3", volume: 0.6 },
-  capture: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3", volume: 0.6 },
-  castle: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/castle.mp3", volume: 0.6 },
-  check: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3", volume: 0.6 },
-  promote: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/promote.mp3", volume: 0.6 },
+  move: { src: "/sfx/move-self.mp3", volume: 0.6 },
+  capture: { src: "/sfx/capture.mp3", volume: 0.6 },
+  castle: { src: "/sfx/castle.mp3", volume: 0.6 },
+  check: { src: "/sfx/move-check.mp3", volume: 0.6 },
+  promote: { src: "/sfx/promote.mp3", volume: 0.6 },
 };
 
 const cache = new Map<Sound, HTMLAudioElement>();

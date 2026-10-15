@@ -3,6 +3,7 @@
 `fetch` is injected (workers.fetch in the Worker) so the parsers stay testable without the runtime.
 """
 
+import asyncio
 import json
 
 # Chess.com asks API clients to identify themselves with a way to reach them.
@@ -79,7 +80,11 @@ async def fetch_games(fetch, platform: str, username: str) -> list[dict]:
     """platform and username must already be validated; they go straight into the URL."""
     if platform == "chesscom":
         index = await (await _get(fetch, f"https://api.chess.com/pub/player/{username.lower()}/games/archives")).json()
-        months = [await (await _get(fetch, url)).json() for url in index.get("archives", [])[-2:]]
+        urls = index.get("archives", [])[-2:]
+        if not urls:
+            return []
+        resps = await asyncio.gather(*[_get(fetch, u) for u in urls])
+        months = await asyncio.gather(*[r.json() for r in resps])
         return parse_chesscom(months)
     text = await (
         await _get(fetch, f"https://lichess.org/api/games/user/{username}?max={MAX_GAMES}&pgnInJson=true", "application/x-ndjson")

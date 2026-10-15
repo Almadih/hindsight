@@ -44,7 +44,7 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hin
   const from = move?.uci.slice(0, 2);
   const to = move?.uci.slice(2, 4);
   const tint = move && { backgroundColor: `color-mix(in srgb, ${BADGE[move.badge].color} 50%, transparent)` };
-  const showBest = move?.bestUci && move.bestUci !== move.uci && move.badge !== "book";
+  const showBest = move?.bestUci && move.bestUci !== move.uci && move.badge !== "book" && move.badge !== "best";
   const epic = fx?.intensity === "epic";
   // On the landing replay, key verdicts land oversized and break out of their square.
   const big = epic && move && !QUIET.has(move.badge);

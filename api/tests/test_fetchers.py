@@ -30,3 +30,29 @@ def test_parse_lichess_handles_ai_and_variants():
     assert len(games) == 1
     assert games[0]["result"] == "0-1"
     assert games[0]["black"]["name"] == "Stockfish level 3"
+
+
+def test_fetch_games_chesscom_concurrent():
+    import asyncio
+    from review.fetchers import fetch_games
+
+    calls = []
+
+    class FakeResp:
+        def __init__(self, data, status=200):
+            self.data = data
+            self.status = status
+
+        async def json(self):
+            return self.data
+
+    async def fake_fetch(url, headers=None):
+        calls.append(url)
+        if "archives" in url:
+            return FakeResp({"archives": ["https://api.chess.com/pub/player/bob/games/2026/09", "https://api.chess.com/pub/player/bob/games/2026/10"]})
+        return FakeResp({"games": [{"url": f"{url}/1", "pgn": "1. e4 *", "rules": "chess", "end_time": 100, "white": {"username": "bob"}, "black": {"username": "alice"}}]})
+
+    games = asyncio.run(fetch_games(fake_fetch, "chesscom", "bob"))
+    assert len(games) == 2
+    assert len(calls) == 3
+

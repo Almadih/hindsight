@@ -37,8 +37,8 @@ class FakeD1:
         return self.conn.execute("SELECT COUNT(*) FROM analysis_requests WHERE ip = ?", (ip,)).fetchone()[0]
 
 
-def allow(db, ip, now):
-    return asyncio.run(allow_analysis(db, ip, now))
+def allow(db, ip, now, force_prune=False):
+    return asyncio.run(allow_analysis(db, ip, now, force_prune=force_prune))
 
 
 def test_per_minute_limit_and_reset():
@@ -57,7 +57,7 @@ def test_per_day_limit_and_pruning():
         assert allow(db, "1.1.1.1", t)
         t += 61
     assert not allow(db, "1.1.1.1", t)
-    assert allow(db, "1.1.1.1", DAY + 61)  # the oldest request has aged out
+    assert allow(db, "1.1.1.1", DAY + 61, force_prune=True)  # the oldest request has aged out
     assert db.count("1.1.1.1") <= PER_DAY  # rows older than a day are deleted
 
 

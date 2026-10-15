@@ -11,18 +11,38 @@ class Engine {
   private worker = new Worker(ENGINE_URL);
   private onLine: ((line: string) => void) | null = null;
   private fail: ((err: unknown) => void) | null = null;
+  private earlyError: Error | null = null;
 
   constructor() {
     this.worker.onmessage = (e) => this.onLine?.(String(e.data));
-    this.worker.onerror = (e) => this.fail?.(new Error(e.message || "Stockfish failed to load"));
+    this.worker.onerror = (e) => {
+      const err = new Error(e.message || "Stockfish failed to load");
+      this.earlyError = err;
+      this.fail?.(err);
+    };
   }
 
-  private until(prefix: string, send: string[], onLine?: (line: string) => void) {
+  private until(prefix: string, send: string[], onLine?: (line: string) => void, timeoutMs = 15000) {
     return new Promise<void>((resolve, reject) => {
-      this.fail = reject;
+      if (this.earlyError) return reject(this.earlyError);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      if (timeoutMs) {
+        timer = setTimeout(() => {
+          this.fail = null;
+          this.onLine = null;
+          reject(new Error(`Stockfish timed out waiting for ${prefix}`));
+        }, timeoutMs);
+      }
+      this.fail = (err) => {
+        clearTimeout(timer);
+        reject(err);
+      };
       this.onLine = (line) => {
         onLine?.(line);
-        if (line.startsWith(prefix)) resolve();
+        if (line.startsWith(prefix)) {
+          clearTimeout(timer);
+          resolve();
+        }
       };
       send.forEach((cmd) => this.worker.postMessage(cmd));
     });

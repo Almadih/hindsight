@@ -11,7 +11,7 @@ THEMES: list[tuple[str, callable]] = [
     ("Walked into mate", lambda m: any(f.startswith("it allows mate") for f in m["tactics"])),
     ("Missed a mate", lambda m: any("would have started mate" in f for f in m["tactics"])),
     ("Let a capture through", lambda m: any(f.startswith("it allows ") and ", winning the " in f for f in m["tactics"])),
-    ("Didn't punish a mistake", lambda m: m["badge"] == "miss"),
+    ("Didn't punish a mistake", lambda m: m["badge"] == "miss" and not any("would have started mate" in f for f in m["tactics"])),
 ]
 
 

@@ -65,7 +65,11 @@ export default function ReviewPage() {
   // Put the stored review's address in the URL so refresh, bookmarks and sharing all work.
   const linkHash = state.stage === "done" && state.linkable ? state.report.hash : null;
   useEffect(() => {
-    if (linkHash) history.replaceState(null, "", `/review?g=${linkHash}`);
+    if (linkHash) {
+      const q = new URLSearchParams(location.search);
+      q.set("g", linkHash);
+      history.replaceState(null, "", `/review?${q.toString()}`);
+    }
   }, [linkHash]);
 
   if (state.stage === "done") {

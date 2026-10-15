@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BadgeIcon } from "@/components/BadgeIcon";
 import { Board } from "@/components/Board";
 import { EvalBar } from "@/components/EvalBar";
@@ -76,9 +76,11 @@ export default function Home() {
   }, [step, held, reduced]);
 
   const move = ply ? DEMO.moves[ply - 1] : null;
+  const lastMoveRef = useRef(move);
 
   useEffect(() => {
-    if (sound && move) playMove(move);
+    if (sound && move && lastMoveRef.current !== move) playMove(move);
+    lastMoveRef.current = move;
   }, [sound, move]);
   const review = (pgn: string) => {
     sessionStorage.setItem("pgn", pgn);

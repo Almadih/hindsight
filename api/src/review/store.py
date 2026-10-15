@@ -47,7 +47,7 @@ async def stored_accuracies(db, hashes: list[str]) -> dict[str, dict]:
     return {r["game_hash"]: {"white": r["white_accuracy"], "black": r["black_accuracy"]} for r in result["results"]}
 
 
-async def allow_analysis(db, ip: str, now: int) -> bool:
+async def allow_analysis(db, ip: str, now: int, force_prune: bool = False) -> bool:
     """Record a new analysis for `ip` if it is under both limits; False means rate limited.
 
     Check and insert are one statement, so concurrent requests can't both slip under the limit.
@@ -62,7 +62,7 @@ async def allow_analysis(db, ip: str, now: int) -> bool:
         .run()
     )
     allowed = result["meta"]["changes"] == 1
-    if allowed:
+    if allowed and (force_prune or now % 10 == 0):
         await db.prepare("DELETE FROM analysis_requests WHERE created_at <= ?").bind(now - DAY).run()
     return allowed
 
