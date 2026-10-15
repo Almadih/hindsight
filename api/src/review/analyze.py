@@ -17,7 +17,7 @@ from .winprob import MATE_CP, game_accuracy, move_accuracy, score_to_cp, win_pct
 
 MAX_PLIES = 600
 # Part of every game hash: bump it whenever classification output changes so stale cached reviews are never served.
-ANALYSIS_VERSION = "2"
+ANALYSIS_VERSION = "3"
 PHASES = ("opening", "middlegame", "endgame")
 
 

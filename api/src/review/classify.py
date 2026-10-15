@@ -37,9 +37,11 @@ def classify(f: MoveFacts) -> str:
     # Punishing chances: the opponent just blundered, or we had mate, and we let it slip.
     if (f.opp_win_lost is not None and f.opp_win_lost >= 15 and dw >= 10) or (f.had_mate and not f.has_mate):
         return "miss"
-    if dw < 2 and f.sacrifice and f.w_before < 85:
+    # Calibration (scripts/calibrate) showed Brilliant and Great firing several times a game; both now demand
+    # the engine's own top move, and Great a 40-point gap to the next-best line.
+    if f.played_best and f.sacrifice and f.w_before < 85:
         return "brilliant"
-    if f.played_best and f.pv_gap is not None and f.pv_gap >= 20:
+    if f.played_best and f.pv_gap is not None and f.pv_gap >= 40:
         return "great"
     if f.played_best or dw < 1:
         return "best"

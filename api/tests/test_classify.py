@@ -24,15 +24,16 @@ def test_book_wins_over_everything():
     assert classify(facts(60, 10, in_book=True)) == "book"
 
 
-def test_brilliant_needs_unwon_position():
-    assert classify(facts(60, 60, sacrifice=True)) == "brilliant"
-    assert classify(facts(90, 90, sacrifice=True)) == "best"
+def test_brilliant_needs_top_move_and_unwon_position():
+    assert classify(facts(60, 60, sacrifice=True, played_best=True)) == "brilliant"
+    assert classify(facts(60, 59.5, sacrifice=True)) == "best"  # a sacrifice that isn't the engine's move
+    assert classify(facts(90, 90, sacrifice=True, played_best=True)) == "best"
     assert classify(facts(60, 54, sacrifice=True)) == "inaccuracy"
 
 
 def test_great_only_move():
-    assert classify(facts(50, 50, played_best=True, pv_gap=25)) == "great"
-    assert classify(facts(50, 50, played_best=True, pv_gap=5)) == "best"
+    assert classify(facts(50, 50, played_best=True, pv_gap=45)) == "great"
+    assert classify(facts(50, 50, played_best=True, pv_gap=25)) == "best"
 
 
 def test_miss_and_mate_rules():

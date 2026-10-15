@@ -26,7 +26,7 @@ def band_label(r: float) -> str:
 
 
 def game_acc(losses: list[float], k: float, w: float) -> float | None:
-    """Our game accuracy with tunable loss scale k and harmonic weight w (current code: k=1, w=0.5)."""
+    """Our game accuracy with tunable loss scale k and harmonic weight w (current code: winprob constants)."""
     if not losses:
         return None
     accs = [max(0.0, min(100.0, 103.1668 * math.exp(-0.04354 * k * dw) - 3.1669)) for dw in losses]
@@ -70,16 +70,17 @@ def main():
     games = len({r["url"] for r in rows})
     print(f"{games} games, {len(rows)} player-games\n")
 
-    bias, mae = errors(rows, 1.0, 0.5)
-    print(f"current formula (k=1.00, w=0.50): bias {bias:+.1f}  MAE {mae:.1f}")
-    best = min(((k / 100, w / 100) for k in range(50, 201, 5) for w in range(0, 101, 5)), key=lambda p: errors(rows, *p)[1])
+    cur_k, cur_w = winprob.LOSS_SCALE, winprob.HARMONIC_WEIGHT
+    bias, mae = errors(rows, cur_k, cur_w)
+    print(f"current formula (k={cur_k:.2f}, w={cur_w:.2f}): bias {bias:+.1f}  MAE {mae:.1f}")
+    best = min(((k / 100, w / 100) for k in range(50, 401, 10) for w in range(0, 101, 5)), key=lambda p: errors(rows, *p)[1])
     bias_b, mae_b = errors(rows, *best)
     print(f"best fit        (k={best[0]:.2f}, w={best[1]:.2f}): bias {bias_b:+.1f}  MAE {mae_b:.1f}\n")
 
     print("per band (current → fitted, our minus Chess.com):")
     for label in sorted({band_label(r["rating"]) for r in rows}, key=lambda s: int(s.split("–")[0])):
         sub = [r for r in rows if band_label(r["rating"]) == label]
-        print(f"  {label:>10}: n={len(sub):2d}  {errors(sub, 1.0, 0.5)[0]:+5.1f} → {errors(sub, *best)[0]:+5.1f}")
+        print(f"  {label:>10}: n={len(sub):2d}  {errors(sub, cur_k, cur_w)[0]:+5.1f} → {errors(sub, *best)[0]:+5.1f}")
 
     # Rating curve: fit elo's logistic to (fitted accuracy, real rating). Single games are noisy; report honestly.
     pts = [(game_acc(r["losses"], *best), r["rating"]) for r in rows if r["losses"]]
@@ -92,7 +93,7 @@ def main():
         return tot / len(pts)
 
     cur = (elo._LOW, elo._SPAN, elo._MID, elo._SCALE)
-    grid = ((low, span, mid, scale) for low in range(30, 61, 5) for span in range(35, 71, 5) for mid in range(1000, 2201, 100) for scale in range(200, 1001, 50) if low + span <= 101)
+    grid = ((low, span, mid, scale) for low in range(20, 61, 5) for span in range(30, 76, 5) for mid in range(400, 2201, 100) for scale in range(200, 1001, 50) if low + span <= 101)
     fit = min(grid, key=lambda p: rating_mae(*p))
     naive = statistics.mean(abs(statistics.mean(r for _, r in pts) - r) for _, r in pts)
     print(f"\nrating curve  current {cur}: MAE {rating_mae(*cur):.0f}")
