@@ -51,7 +51,22 @@ export default function Home() {
   const [held, setHeld] = useState(false);
   const [found, setFound] = useState<{ games: GameSummary[]; username: string; platform: Platform } | null>(null);
   // Off by default every visit; the toggle click doubles as the gesture browsers require before audio.
-  const [sound, setSound] = useState(false);
+  const [sound, setSound] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return sessionStorage.getItem("sound") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleSound = () => {
+    if (!sound) primeSounds();
+    const next = !sound;
+    setSound(next);
+    try {
+      sessionStorage.setItem("sound", next ? "1" : "0");
+    } catch {}
+  };
   const ply = reduced ? STILL_PLY : step;
 
   useEffect(() => {
@@ -82,10 +97,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <p className="hidden text-sm text-muted sm:block">Free · No account · Chess.com & Lichess</p>
             <button
-              onClick={() => {
-                if (!sound) primeSounds();
-                setSound(!sound);
-              }}
+              onClick={toggleSound}
               aria-pressed={sound}
               className="flex items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm font-semibold text-muted hover:text-fg aria-pressed:text-fg"
             >

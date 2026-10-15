@@ -31,10 +31,15 @@ type Props = {
   /** Tap-to-move (retry): squares report taps, and the picked square is highlighted. */
   onSquareClick?: (square: string) => void;
   selected?: string | null;
+  /** A move to mark neutrally (retry: the opponent's move you're answering). */
+  lastUci?: string;
 };
 
+// Neutral, so it never reads as a verdict colour.
+const LAST_MOVE = { boxShadow: "inset 0 0 0 3px rgb(20 19 17 / 0.4)", backgroundColor: "rgb(20 19 17 / 0.14)" };
+
 /** Board at one ply: the played move tinted by its badge, badge on the target square, best move as an arrow. */
-export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hintUci, onSquareClick, selected }: Props) {
+export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hintUci, onSquareClick, selected, lastUci }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const from = move?.uci.slice(0, 2);
   const to = move?.uci.slice(2, 4);
@@ -103,7 +108,9 @@ export function Board({ fen, flipped, move, onMove, fx, id = "review-board", hin
                     ? { boxShadow: "inset 0 0 0 4px rgb(129 182 76 / 0.95)", backgroundColor: "rgb(129 182 76 / 0.25)" }
                     : tint && (square === from || square === to)
                       ? tint
-                      : undefined
+                      : lastUci && (square === lastUci.slice(0, 2) || square === lastUci.slice(2, 4))
+                        ? LAST_MOVE
+                        : undefined
                 }
               >
                 {children}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BADGE, BADGE_ORDER, badgeText } from "@/lib/review";
+import { BADGE, BADGE_ORDER, badgeText, canRetry, gist, personalize } from "@/lib/review";
 import type { Phase, Report, ReviewMove, Side } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 
@@ -34,13 +34,6 @@ function AccuracyRing({ value, side }: { value: number | null; side: Side }) {
   );
 }
 
-/** The coach's first sentence, as a one-line gist. */
-function gist(text: string | null | undefined): string | null {
-  if (!text) return null;
-  const first = text.split(/(?<=[.!?])\s/)[0];
-  return first.length > 110 ? `${first.slice(0, 107)}…` : first;
-}
-
 type Props = {
   report: Report;
   names: Record<Side, string>;
@@ -48,11 +41,13 @@ type Props = {
   /** From decidingMoments, shared with the review's key-moment navigation so both list the same moves. */
   moments: ReviewMove[];
   mine: boolean;
+  /** Plies whose retry you solved; until then a retry-able moment shows its rule, not the coach (who names the answer). */
+  solved: ReadonlySet<number>;
   onJump: (ply: number) => void;
 };
 
 /** The game in one screen: the moments that decided it first, then accuracy, rating and every verdict count. */
-export function SummaryCard({ report, names, me, moments, mine, onJump }: Props) {
+export function SummaryCard({ report, names, me, moments, mine, solved, onJump }: Props) {
   const { accuracy, counts, elo } = report;
   return (
     // relative: keeps the sr-only table captions inside this scroll box instead of stretching the page.
@@ -74,7 +69,7 @@ export function SummaryCard({ report, names, me, moments, mine, onJump }: Props)
                       </span>{" "}
                       {m.san} <span style={{ color: badgeText(m.badge) }}>{BADGE[m.badge].phrase}</span>
                     </span>
-                    <span className="mt-0.5 block text-pretty text-muted">{gist(m.coach) ?? BADGE[m.badge].rule}</span>
+                    <span className="mt-0.5 block text-pretty text-muted">{(canRetry(m) && !solved.has(m.ply) ? null : gist(m.coach && personalize(m.coach, me && names[me]))) ?? BADGE[m.badge].rule}</span>
                   </span>
                   <span className="shrink-0 self-center text-muted" aria-hidden="true">
                     ›

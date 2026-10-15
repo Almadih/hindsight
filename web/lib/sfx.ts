@@ -1,12 +1,14 @@
 import type { Badge } from "./types";
 
-// Pixabay sound effects (public/sfx/LICENSE.md). Played only after the visitor turns sound on.
-type Sound = "move" | "capture" | "check" | "good" | "bad" | "mate" | "fanfare";
+// Chess move sounds from Chess.com; verdict sounds from Pixabay. Played only after the visitor turns sound on.
+type Sound = "move" | "capture" | "castle" | "check" | "promote" | "good" | "bad" | "mate" | "fanfare";
 
 const FILES: Record<Sound, { src: string; volume: number }> = {
-  move: { src: "/sfx/click-soft.mp3", volume: 0.5 },
-  capture: { src: "/sfx/click.mp3", volume: 0.7 },
-  check: { src: "/sfx/ping.mp3", volume: 0.45 },
+  move: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-self.mp3", volume: 0.6 },
+  capture: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/capture.mp3", volume: 0.6 },
+  castle: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/castle.mp3", volume: 0.6 },
+  check: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3", volume: 0.6 },
+  promote: { src: "https://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/promote.mp3", volume: 0.6 },
   good: { src: "/sfx/sparkle.mp3", volume: 0.5 },
   bad: { src: "/sfx/impact-bass-1.mp3", volume: 0.55 },
   mate: { src: "/sfx/impact-bass-2.mp3", volume: 0.7 },
@@ -44,14 +46,22 @@ export function primeSounds() {
   }
 }
 
+function moveSound(san: string): Sound {
+  if (san.includes("=")) return "promote";
+  if (san.endsWith("+") || san.endsWith("#")) return "check";
+  if (san.startsWith("O-O")) return "castle";
+  if (san.includes("x")) return "capture";
+  return "move";
+}
+
 /** The sound for one move: the piece hitting the board, then the verdict on top. */
-export function playMove(move: { san: string; badge: Badge }) {
+export function playMove(move: { san: string; badge?: Badge | null }) {
   const mate = move.san.endsWith("#");
-  play(move.san.includes("x") ? "capture" : "move");
+  play(moveSound(move.san));
   if (mate) {
     play("mate", 120);
     play("fanfare", 450);
-  } else if (move.san.endsWith("+")) play("check", 90);
+  }
   if (move.badge === "brilliant" || move.badge === "great") play("good", 140);
   else if (move.badge === "blunder" || move.badge === "mistake" || move.badge === "miss") play("bad", 100);
 }

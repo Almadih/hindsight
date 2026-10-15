@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import { BADGE, badgeText, canRetry, describeEval, formatEval, uciToSan } from "@/lib/review";
+import { BADGE, badgeText, canRetry, describeEval, formatEval, personalize, uciToSan } from "@/lib/review";
 import type { ReviewMove } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 
@@ -19,6 +19,10 @@ type Props = {
   mode: Mode;
   /** On a retry-able error, the answer (best move, arrow, coach note) stays hidden until this is true. */
   revealed: boolean;
+  /** You already found the move on this ply in a retry. */
+  solved: boolean;
+  /** Your name when you played this game, so coach notes can say "your" instead of it. */
+  you: string | null;
   /** Set when this ply is one of the key moments: 1-based position and how many there are. */
   moment: { index: number; total: number } | null;
   onReveal: () => void;
@@ -29,8 +33,9 @@ type Props = {
   onLineStep: (index: number) => void;
 };
 
-const primary = "rounded bg-accent px-3 py-1.5 text-sm font-bold text-[#141311] hover:brightness-110";
-const secondary = "rounded bg-bg px-3 py-1.5 text-sm font-semibold hover:bg-line";
+// 44px tall on phones (thumb targets), compact on desktop.
+const primary = "rounded bg-accent px-3 py-3 text-sm font-bold text-[#141311] hover:brightness-110 lg:py-1.5";
+const secondary = "rounded bg-bg px-3 py-3 text-sm font-semibold hover:bg-line lg:py-1.5";
 
 /** Move numbers for a line starting at `fen`: "19… Rxg2+ 20. Kxg2 Ne5". */
 function numbered(fen: string, sans: string[]): string[] {
@@ -46,7 +51,7 @@ function numbered(fen: string, sans: string[]): string[] {
 }
 
 /** What happened on the current ply, the coach's take, and ways to dig in: retry the move or see the best line. */
-export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onReveal, onFollowUp, onRetry, onExit, onLineStep }: Props) {
+export function MoveCard({ move, fenBefore, opening, mode, revealed, solved, you, moment, onReveal, onFollowUp, onRetry, onExit, onLineStep }: Props) {
   if (!move) {
     return (
       <div className="flex min-h-16 items-center rounded-md bg-raised px-3 py-2 text-sm text-muted">
@@ -60,7 +65,11 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
     const { feedback } = mode;
     // After a wrong try, name the piece the best move uses (and its square, so it's never ambiguous): a nudge, not the answer.
     const piece = move.bestUci && new Chess(fenBefore).get(move.bestUci.slice(0, 2) as Parameters<Chess["get"]>[0]);
-    const hint = feedback && !feedback.ok ? `${feedback.uci === move.uci ? "That’s the game move again. " : ""}${piece ? `Hint: move the ${PIECE[piece.type]} on ${move.bestUci!.slice(0, 2)}.` : "Try another move."}` : null;
+    // Why it falls short, when we know: it's the game move, or one of the engine's lines with fewer winning chances.
+    const alt = feedback && move.alternatives.find((a) => a.uci === feedback.uci);
+    const top = move.alternatives[0];
+    const why = !feedback || feedback.ok ? "" : feedback.uci === move.uci ? "That’s the game move again. " : alt && top ? `It keeps ${Math.round(alt.w)}% winning chances; the best keeps ${Math.round(top.w)}%. ` : "";
+    const hint = feedback && !feedback.ok ? `${why}${piece ? `Hint: move the ${PIECE[piece.type]} on ${move.bestUci!.slice(0, 2)}.` : "Try another move."}` : null;
     return (
       <div className="space-y-2 rounded-md bg-raised px-3 py-2.5" aria-live="polite">
         <div className="flex items-center gap-2.5">
@@ -77,7 +86,7 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
             Back to game
           </button>
           <button onClick={onFollowUp} className={secondary}>
-            {feedback?.ok ? "See the follow-up" : "Show answer"}
+            {feedback?.ok ? "Play the best line" : "Show answer"}
           </button>
         </div>
       </div>
@@ -85,7 +94,7 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
   }
 
   if (mode.kind === "line") {
-    const labels = numbered(fenBefore, mode.sans);
+    const labels = numbered(mode.fens[0], mode.sans);
     return (
       <div className="space-y-2 rounded-md bg-raised px-3 py-2.5" aria-live="polite">
         <p className="font-semibold">The engine’s line</p>
@@ -117,7 +126,10 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
   const evalText = move.mateWhite !== null ? describeEval(move) : formatEval(move);
   const bad = canRetry(move);
   // Don't spoil the puzzle: the best move and the coach's explanation wait until you try or ask.
-  const hidden = bad && !revealed;
+  const hidden = bad && !revealed && !solved;
+  // After a best move the line continues from it ("what comes next"); otherwise it replays the better move.
+  const playedBest = move.bestUci === move.uci;
+  const hasLine = move.mateWhite !== 0 && move.bestPv.length > (playedBest ? 1 : 0);
   const sub = hidden ? BADGE[move.badge].rule : best ? `Best was ${best}` : move.badge === "book" && opening ? opening : BADGE[move.badge].rule;
   return (
     // Polite live region: stepping with the arrows or N/P reads out the new move and verdict.
@@ -134,6 +146,7 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
                 Key moment {moment.index} of {moment.total} ·{" "}
               </span>
             )}
+            {solved && <span style={{ color: badgeText("best") }}>Solved · </span>}
             {sub}
           </p>
         </div>
@@ -142,12 +155,12 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
           <span className="sr-only"> ({describeEval(move)})</span>
         </span>
       </div>
-      {move.coach && !hidden && <p className="text-sm leading-relaxed text-pretty">{move.coach}</p>}
-      {move.badge !== "book" && (bad || move.bestPv.length > 0) && (
+      {move.coach && !hidden && <p className="text-sm leading-relaxed text-pretty">{personalize(move.coach, you)}</p>}
+      {move.badge !== "book" && (bad || hasLine) && (
         <div className="flex flex-wrap gap-2">
           {/* Retry comes first on errors: seeing the answer before trying would spoil the puzzle. */}
           {bad && (
-            <button onClick={onRetry} className={primary}>
+            <button onClick={onRetry} className={solved ? secondary : primary}>
               Retry this move
             </button>
           )}
@@ -156,9 +169,9 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
               Show answer
             </button>
           ) : (
-            move.bestPv.length > 0 && (
+            hasLine && (
               <button onClick={onFollowUp} className={secondary}>
-                {bad ? "Play the best line" : "Show follow-up"}
+                {playedBest ? "What comes next" : "Play the best line"}
               </button>
             )
           )}

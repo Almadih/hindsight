@@ -1,6 +1,6 @@
 // Self-check for followUpLine: `node lib/followup.check.ts` (Node 24 strips the types).
 import assert from "node:assert/strict";
-import { followUpLine } from "./review.ts";
+import { followUpLine, personalize } from "./review.ts";
 
 // Scholar's mate: the line stops at mate even though the PV goes on.
 const mate = followUpLine("r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", ["h5f7", "e8f7", "a2a3"]);
@@ -28,4 +28,8 @@ assert.deepEqual(followUpLine(bd2, pv).sans, ["exd5", "Nxd5", "O-O", "Bxc3", "Qe
 
 // PV too short to win the piece back: stop before it was lost.
 assert.deepEqual(followUpLine(bd2, pv.slice(0, 5)).sans, ["exd5", "Nxd5", "O-O"]);
+// personalize: the coach's "Name's" becomes "your" when Name is you, capitalised at a sentence start.
+assert.equal(personalize("Almadih_desu2's Bd2 allows Bxc3. It hangs Almadih_desu2's knight.", "Almadih_desu2"), "Your Bd2 allows Bxc3. It hangs your knight.");
+assert.equal(personalize("Count (Isouard)'s move.", "Count (Isouard)"), "Your move.");
+assert.equal(personalize("Hikaru's Bxb3+ wins.", null), "Hikaru's Bxb3+ wins.");
 console.log("followUpLine ok");

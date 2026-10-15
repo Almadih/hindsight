@@ -52,6 +52,20 @@ export function decidingMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wB
   return { moments: mine ? picked : keyMoments(moves), mine };
 }
 
+/** The coach's first sentence, as a one-line gist. */
+export function gist(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const first = text.split(/(?<=[.!?])\s/)[0];
+  return first.length > 110 ? `${first.slice(0, 107)}…` : first;
+}
+
+/** Coach notes name both players; when one of them is you, "Hikaru's Bxb3+" reads "Your Bxb3+". */
+export function personalize(text: string, you: string | null): string {
+  if (!you) return text;
+  const name = you.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.replace(new RegExp(`${name}['’]s\\b`, "g"), "your").replace(/(^|[.!?]\s+)your/g, "$1Your");
+}
+
 /** Errors with an engine alternative can be retried on the board. */
 export const canRetry = (m: Pick<ReviewMove, "badge" | "alternatives">) => BAD.has(m.badge) && m.alternatives.length > 0;
 

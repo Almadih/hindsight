@@ -27,7 +27,7 @@ export function MoveList({ moves, ply, onSelect }: { moves: ReviewMove[]; ply: n
         ref={m.ply === ply ? active : undefined}
         aria-current={m.ply === ply ? "step" : undefined}
         onClick={() => onSelect(m.ply)}
-        className="flex min-w-0 items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-raised aria-[current=step]:bg-[#4b4844]"
+        className="flex min-w-0 items-center gap-1.5 rounded px-2 py-3 text-left hover:bg-raised aria-[current=step]:bg-[#4b4844] lg:py-1"
       >
         <span className="w-5 shrink-0">{NOTABLE.has(m.badge) && <BadgeIcon badge={m.badge} size={20} />}</span>
         <span className="truncate font-semibold">{m.san}</span>
