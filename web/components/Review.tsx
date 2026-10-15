@@ -200,6 +200,9 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     if (Math.abs(dx) > 48 && Math.abs(dx) > 1.5 * Math.abs(dy)) go(ply + (dx < 0 ? 1 : -1));
   };
 
+  const start = () => go(moments[0]?.ply ?? 1);
+  const startLabel = moments.length ? "Start with the first key moment" : "Start review";
+  const startButton = "rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110";
   const navButton = "flex items-center justify-center gap-1.5 rounded bg-raised py-2 text-sm font-semibold hover:bg-line disabled:opacity-40";
   // Two rows: walk the key moments on top, single-step and flip below.
   const navRows = (titles: boolean) => (
@@ -355,8 +358,9 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
           {tab === "summary" ? (
             <>
               <SummaryCard report={report} names={names} me={me} moments={moments} mine={mine} onJump={go} />
-              <button onClick={() => go(moments[0]?.ply ?? 1)} className="rounded-md bg-accent py-2.5 font-semibold text-[#141311] hover:brightness-110">
-                {moments.length ? "Start with the first key moment" : "Start review"}
+              {/* Phones get this in the sticky bar instead, within thumb reach. */}
+              <button onClick={start} className={`${startButton} hidden lg:block`}>
+                {startLabel}
               </button>
             </>
           ) : mode.kind === "end" ? (
@@ -427,7 +431,13 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         aria-label="Move navigation"
         className="fixed inset-x-0 bottom-0 z-50 grid gap-1 border-t border-line bg-surface/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
       >
-        {navRows(false)}
+        {tab === "summary" ? (
+          <button onClick={start} className={startButton}>
+            {startLabel}
+          </button>
+        ) : (
+          navRows(false)
+        )}
       </nav>
     </main>
   );

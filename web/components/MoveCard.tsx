@@ -58,9 +58,9 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, moment, onR
 
   if (mode.kind === "retry") {
     const { feedback } = mode;
-    // After a wrong try, name the piece the best move uses: a nudge, not the answer.
+    // After a wrong try, name the piece the best move uses (and its square, so it's never ambiguous): a nudge, not the answer.
     const piece = move.bestUci && new Chess(fenBefore).get(move.bestUci.slice(0, 2) as Parameters<Chess["get"]>[0]);
-    const hint = feedback && !feedback.ok ? `${feedback.uci === move.uci ? "That’s the game move again. " : ""}${piece ? `Hint: it’s a ${PIECE[piece.type]} move.` : "Try another move."}` : null;
+    const hint = feedback && !feedback.ok ? `${feedback.uci === move.uci ? "That’s the game move again. " : ""}${piece ? `Hint: move the ${PIECE[piece.type]} on ${move.bestUci!.slice(0, 2)}.` : "Try another move."}` : null;
     return (
       <div className="space-y-2 rounded-md bg-raised px-3 py-2.5" aria-live="polite">
         <div className="flex items-center gap-2.5">
