@@ -87,3 +87,7 @@ def test_sacrifice_detection():
     assert not is_sacrifice(b, b.parse_san("Nf3"))
     b = board_after("e4 e5 Nf3 d6 d4 Bg4 dxe5")
     assert not is_sacrifice(b, b.parse_san("Bxf3"))  # even trade
+    # Pinned pawn cannot legally capture: Qg3+ is not a queen sacrifice
+    pinned_game = "e4 e5 Nf3 Nc6 Bc4 Nf6 d3 Bc5 c3 O-O b4 Bb6 O-O a5 b5 Ne7 Nxe5 d6 Nf3 Bg4 h3 Bh5 Bg5 Ng6 Nbd2 h6 Bxf6 Qxf6 e5 Nxe5 Qb3 Nxf3+ Nxf3 Bxf3 gxf3 Qxf3 Bd5"
+    b = board_after(pinned_game)
+    assert not is_sacrifice(b, b.parse_san("Qg3+"))

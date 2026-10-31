@@ -87,13 +87,40 @@ def classify(f: MoveFacts) -> str:
 
 
 
+def _attackers(board: chess.Board, attacker_color: chess.Color, sq: chess.Square) -> list[chess.Square]:
+    """Pieces of attacker_color that can legally capture sq."""
+    if board.turn == attacker_color:
+        return [m.from_square for m in board.legal_moves if m.to_square == sq]
+    attackers = []
+    for a in board.attackers(attacker_color, sq):
+        if board.is_pinned(attacker_color, a):
+            if not (board.pin_mask(attacker_color, a) & chess.BB_SQUARES[sq]):
+                continue
+        attackers.append(a)
+    return attackers
+
+
+def _defenders(board: chess.Board, defender_color: chess.Color, sq: chess.Square) -> list[chess.Square]:
+    """Pieces of defender_color that protect sq (excluding pieces pinned away from sq)."""
+    defenders = []
+    for d in board.attackers(defender_color, sq):
+        if board.is_pinned(defender_color, d):
+            if not (board.pin_mask(defender_color, d) & chess.BB_SQUARES[sq]):
+                continue
+        defenders.append(d)
+    return defenders
+
+
 def _hanging(board: chess.Board, sq: chess.Square) -> bool:
     """Piece on sq can be won: attacked and undefended, or attacked by something cheaper."""
     piece = board.piece_at(sq)
-    attackers = board.attackers(not piece.color, sq)
+    if not piece:
+        return False
+    attackers = _attackers(board, not piece.color, sq)
     if not attackers:
         return False
-    if not board.attackers(piece.color, sq):
+    defenders = _defenders(board, piece.color, sq)
+    if not defenders:
         return True
     return min(VALUE[board.piece_type_at(a)] for a in attackers) < VALUE[piece.piece_type]
 
