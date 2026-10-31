@@ -234,14 +234,12 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
     } else setPicked(mine ? square : null);
   };
 
-  // A solved retry lands the Best badge on the board like any reviewed move. On an unsolved error the
-  // best-move arrow stays hidden so the board doesn't give the retry away.
+  // In game review, show the played move and best-move arrow. During retry, the arrow stays
+  // hidden so the board doesn't give the retry away.
   const onGame = mode.kind === "game" || mode.kind === "end";
   const boardMove =
     onGame
-      ? move && canRetry(move) && !isRevealed
-        ? { ...move, bestUci: null }
-        : move
+      ? move
       : mode.kind === "retry" && mode.feedback?.ok
         ? { ply: 10_000 + ply, san: mode.feedback.san, uci: mode.feedback.uci, badge: "best" as const, bestUci: null }
         : null;
