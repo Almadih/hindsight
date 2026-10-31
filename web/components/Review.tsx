@@ -4,7 +4,7 @@ import { Chess } from "chess.js";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { mySide } from "@/lib/me";
-import { BADGE, badgeText, canRetry, capturedPieces, decidingMoments, followUpLine, gist, isGoodRetry, materialDiff, personalize } from "@/lib/review";
+import { BADGE, badgeText, capturedPieces, decidingMoments, followUpLine, gist, isGoodRetry, materialDiff, personalize } from "@/lib/review";
 import type { Report, ReviewMove, Side } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 import { Board } from "./Board";

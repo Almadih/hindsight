@@ -73,7 +73,7 @@ async function main() {
   const engines = Array.from({ length: ENGINES }, () => new Engine(enginePath));
   await Promise.all(engines.map((e) => e.init()));
 
-  const allEvals: Record<string, any[]> = {};
+  const allEvals: Record<string, unknown[]> = {};
   for (const [gid, pgn] of Object.entries(pgns)) {
     const chess = new Chess();
     chess.loadPgn(pgn as string);
