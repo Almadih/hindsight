@@ -17,7 +17,7 @@ from .winprob import MATE_CP, game_accuracy, move_accuracy, score_to_cp, win_pct
 
 MAX_PLIES = 600
 # Part of every game hash: bump it whenever classification output changes so stale cached reviews are never served.
-ANALYSIS_VERSION = "3"
+ANALYSIS_VERSION = "5"
 PHASES = ("opening", "middlegame", "endgame")
 
 
@@ -157,6 +157,25 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
             for line in lines
         ]
 
+        was_in_check = board.is_check()
+        is_recap = False
+        if board.move_stack:
+            prev_move = board.peek()
+            if board.is_capture(move) and move.to_square == prev_move.to_square:
+                is_recap = True
+
+        played_best = False
+        if lines:
+            if lines[0].uci == move.uci():
+                played_best = True
+            elif len(lines) > 1:
+                top_cp = score_to_cp(lines[0].cp, lines[0].mate)
+                for line in lines[1:]:
+                    if line.uci == move.uci():
+                        if abs(top_cp - score_to_cp(line.cp, line.mate)) <= 5:
+                            played_best = True
+                        break
+
         board.push(move)
         _check_eval(board, ev_after)
         cp_after = _position_cp(board, ev_after)  # opponent's perspective
@@ -164,10 +183,15 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
         name = opening_name(board)
         opening = name or opening
 
+        best_cp = score_to_cp(cp_before, mate_before)
+        after_cp = -score_to_cp(cp_after, mate_after)
+        cp_loss = max(0, best_cp - after_cp)
+        after_mate = 0 if board.is_checkmate() else (-mate_after if mate_after is not None else None)
+
         facts = MoveFacts(
             w_before=win_pct(cp_before),
             w_after=100 - win_pct(cp_after),
-            played_best=bool(lines) and lines[0].uci == move.uci(),
+            played_best=played_best,
             pv_gap=(
                 win_pct(score_to_cp(lines[0].cp, lines[0].mate)) - win_pct(score_to_cp(lines[1].cp, lines[1].mate))
                 if len(lines) >= 2
@@ -180,9 +204,14 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
             has_mate=board.is_checkmate() or (mate_after is not None and mate_after < 0),
             into_mate=mate_after is not None and mate_after > 0,
             was_mated=mate_before is not None and mate_before < 0,
+            is_recapture=is_recap,
+            was_in_check=was_in_check,
+            cp_loss=cp_loss,
+            best_mate=mate_before,
+            after_mate=after_mate,
         )
         badge = classify(facts)
-        acc = move_accuracy(facts.win_lost)
+        acc = 100.0 if (facts.in_book or facts.played_best) else move_accuracy(facts.win_lost)
         accs[mover].append(acc)
         phase_accs[mover][phase].append(acc)
         counts[mover][badge] += 1

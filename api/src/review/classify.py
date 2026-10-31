@@ -22,6 +22,11 @@ class MoveFacts:
     has_mate: bool  # mover still has a forced mate after the move
     into_mate: bool  # opponent has a forced mate after the move
     was_mated: bool  # mover was already being mated before the move
+    is_recapture: bool = False  # direct recapture on the square the opponent just moved to / captured on
+    was_in_check: bool = False  # mover was in check before this move
+    cp_loss: int = 0  # centipawn loss from best engine score
+    best_mate: int | None = None  # mate in N before move (positive for mover)
+    after_mate: int | None = None  # mate in N after move (positive for mover, negative if mover mated)
 
     @property
     def win_lost(self) -> float:
@@ -32,28 +37,54 @@ def classify(f: MoveFacts) -> str:
     if f.in_book:
         return "book"
     dw = f.win_lost
-    if f.into_mate and not f.was_mated:
+    if f.into_mate and not f.was_mated and f.w_before >= 15.0:
         return "blunder"
-    # Punishing chances: the opponent just blundered, or we had mate, and we let it slip.
-    if (f.opp_win_lost is not None and f.opp_win_lost >= 15 and dw >= 10) or (f.had_mate and not f.has_mate):
-        return "miss"
-    # Calibration (scripts/calibrate) showed Brilliant and Great firing several times a game; both now demand
-    # the engine's own top move, and Great a 40-point gap to the next-best line.
-    if f.played_best and f.sacrifice and f.w_before < 85:
+
+    # Missing a fast mate (mate in 1 or 2) when played move does not deliver fast mate
+    if f.best_mate is not None and 0 < f.best_mate <= 2:
+        delivered_fast_mate = f.has_mate and (f.after_mate == 0 or (f.after_mate is not None and 0 < f.after_mate <= 1))
+        if not delivered_fast_mate:
+            return "miss"
+
+    # Punishing chances: opponent slipped (>= 15% drop) or we had mate, and we let it slip
+    if (f.opp_win_lost is not None and f.opp_win_lost >= 15.0 and dw >= 10.0) or (f.had_mate and not f.has_mate):
+        if f.w_after >= 35.0 or dw < 28.0:
+            return "miss"
+        return "blunder"
+
+    if dw >= 28.0:
+        return "blunder"
+
+    # Brilliant: sound piece sacrifice that maintains equality or winning advantage
+    if f.sacrifice and (f.played_best or dw < 6.0) and f.w_after >= 50.0 and f.w_before < 98.0:
         return "brilliant"
-    if f.played_best and f.pv_gap is not None and f.pv_gap >= 40:
+
+    # Great: finding the only move in a critical position. Recaptures and check evasions are routine.
+    if f.played_best and not f.is_recapture and not f.was_in_check and f.pv_gap is not None and f.pv_gap >= 18.0 and f.w_before < 98.0:
         return "great"
-    if f.played_best or dw < 1:
+
+    if f.played_best:
         return "best"
-    if dw < 3:
+
+    # In decided losing positions (w_before < 20), win% saturates near 0; evaluate mistakes by centipawn loss
+    if f.w_before < 20.0:
+        if f.cp_loss >= 250:
+            return "blunder" if f.cp_loss >= 600 else "mistake"
+        if f.cp_loss >= 100:
+            return "mistake"
+        if f.cp_loss >= 50:
+            return "inaccuracy"
+
+    if dw < 3.0:
         return "excellent"
-    if dw < 5:
+    if dw < 6.0:
         return "good"
-    if dw < 10:
+    if dw < 14.0:
         return "inaccuracy"
-    if dw < 20:
+    if dw < 28.0:
         return "mistake"
     return "blunder"
+
 
 
 def _hanging(board: chess.Board, sq: chess.Square) -> bool:

@@ -13,27 +13,42 @@ def facts(w_before=50.0, w_after=50.0, **kw):
 
 
 @pytest.mark.parametrize(
-    "lost,badge",
-    [(0.5, "best"), (1, "excellent"), (2.9, "excellent"), (3, "good"), (5, "inaccuracy"), (10, "mistake"), (20, "blunder"), (60, "blunder")],
+    "played_best,lost,badge",
+    [
+        (True, 0.0, "best"),
+        (False, 0.5, "excellent"),
+        (False, 1.0, "excellent"),
+        (False, 2.9, "excellent"),
+        (False, 3.0, "good"),
+        (False, 5.9, "good"),
+        (False, 6.0, "inaccuracy"),
+        (False, 13.9, "inaccuracy"),
+        (False, 14.0, "mistake"),
+        (False, 27.9, "mistake"),
+        (False, 28.0, "blunder"),
+        (False, 60.0, "blunder"),
+    ],
 )
-def test_thresholds(lost, badge):
-    assert classify(facts(60, 60 - lost)) == badge
+def test_thresholds(played_best, lost, badge):
+    assert classify(facts(60, 60 - lost, played_best=played_best)) == badge
 
 
 def test_book_wins_over_everything():
     assert classify(facts(60, 10, in_book=True)) == "book"
 
 
-def test_brilliant_needs_top_move_and_unwon_position():
+def test_brilliant_needs_sound_sacrifice_and_unwon_position():
     assert classify(facts(60, 60, sacrifice=True, played_best=True)) == "brilliant"
-    assert classify(facts(60, 59.5, sacrifice=True)) == "best"  # a sacrifice that isn't the engine's move
-    assert classify(facts(90, 90, sacrifice=True, played_best=True)) == "best"
-    assert classify(facts(60, 54, sacrifice=True)) == "inaccuracy"
+    assert classify(facts(60, 59.5, sacrifice=True)) == "brilliant"  # sound sacrifice (dw < 6.0, w_after >= 50) is brilliant
+    assert classify(facts(99, 99, sacrifice=True, played_best=True)) == "best"  # w_before >= 98 is already won
+    assert classify(facts(60, 50, sacrifice=True)) == "inaccuracy"
 
 
 def test_great_only_move():
-    assert classify(facts(50, 50, played_best=True, pv_gap=45)) == "great"
-    assert classify(facts(50, 50, played_best=True, pv_gap=25)) == "best"
+    assert classify(facts(50, 50, played_best=True, pv_gap=25)) == "great"
+    assert classify(facts(50, 50, played_best=True, pv_gap=10)) == "best"
+    assert classify(facts(50, 50, played_best=True, pv_gap=25, is_recapture=True)) == "best"
+    assert classify(facts(50, 50, played_best=True, pv_gap=25, was_in_check=True)) == "best"
 
 
 def test_miss_and_mate_rules():
@@ -41,7 +56,18 @@ def test_miss_and_mate_rules():
     assert classify(facts(80, 65, opp_win_lost=5)) == "mistake"
     assert classify(facts(99.9, 99.5, had_mate=True, has_mate=False)) == "miss"
     assert classify(facts(50, 49.5, into_mate=True)) == "blunder"
-    assert classify(facts(0.1, 0.1, into_mate=True, was_mated=True)) == "best"
+    assert classify(facts(0.1, 0.1, into_mate=True, was_mated=True, played_best=True)) == "best"
+    assert classify(facts(80, 50, opp_win_lost=30)) == "miss"  # missed punishment, position still equal (w_after=50) -> miss
+    assert classify(facts(80, 20, opp_win_lost=30)) == "blunder"  # turned game into completely lost -> blunder
+    assert classify(facts(100, 100, best_mate=1, after_mate=4, has_mate=True)) == "miss"  # missed mate in 1 -> miss
+
+
+def test_decided_position_centipawn_loss():
+    # In heavily losing positions (w_before < 20), win% drop is tiny even for huge material loss
+    assert classify(facts(10, 8, cp_loss=150)) == "mistake"
+    assert classify(facts(10, 8, cp_loss=60)) == "inaccuracy"
+    assert classify(facts(10, 9, cp_loss=10)) == "excellent"
+
 
 
 def board_after(san_moves: str) -> chess.Board:

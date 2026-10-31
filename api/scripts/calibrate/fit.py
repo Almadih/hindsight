@@ -53,7 +53,7 @@ def load():
                     "rating": row["ratings"][side],
                     "theirs": row["chesscom"][side],
                     "ours": report["accuracy"][side],
-                    "losses": [max(0.0, m["wBefore"] - m["wAfter"]) for m in moves],
+                    "losses": [0.0 if (m["badge"] in ("book", "best") or m.get("accuracy", 0) == 100.0) else max(0.0, m["wBefore"] - m["wAfter"]) for m in moves],
                     "badges": Counter(m["badge"] for m in moves),
                 }
             )

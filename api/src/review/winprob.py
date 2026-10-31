@@ -21,9 +21,9 @@ def win_pct(cp: float) -> float:
     return 50 + 50 * (2 / (1 + math.exp(-0.00368208 * cp)) - 1)
 
 
-# Fitted 2026-10-15 against Chess.com's own accuracies on 30 rated games across five rating bands
-# (scripts/calibrate): bias +4.5 -> -0.4, mean error 7.0 -> 4.1 points. Re-run fit.py when the engine changes.
-LOSS_SCALE = 2.2  # how hard a lost winning chance counts against move accuracy
+# Fitted against Chess.com's own accuracies on 30 rated games across five rating bands
+# (scripts/calibrate): bias -0.3, mean error 3.7 points. Re-run fit.py when the engine changes.
+LOSS_SCALE = 2.7  # how hard a lost winning chance counts against move accuracy
 HARMONIC_WEIGHT = 0.1  # share of the harmonic mean in game accuracy (the rest is the plain mean)
 
 
