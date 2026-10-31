@@ -528,40 +528,61 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
               </button>
             </>
           ) : mode.kind === "end" ? (
-            <section aria-labelledby="end-title" aria-live="polite" className="space-y-3 rounded-md bg-raised px-3 py-3">
-              <div>
-                <h2 id="end-title" className="text-xl font-bold">
+            <section
+              aria-labelledby="end-title"
+              aria-live="polite"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-raised border border-line/60"
+            >
+              <div className="shrink-0 p-3.5 pb-2.5 border-b border-line/40">
+                <h2 id="end-title" className="text-base lg:text-lg font-bold tracking-tight text-fg">
                   That’s what decided it
                 </h2>
-                <p className="mt-1 text-sm text-pretty">{takeaway(report, names, me)}</p>
+                <p className="mt-1 text-xs sm:text-sm text-pretty leading-relaxed text-muted">
+                  {takeaway(report, names, me)}
+                </p>
               </div>
-              <ol className="space-y-1">
+              <ol className="min-h-0 flex-1 overflow-y-auto p-2 space-y-1">
                 {moments.map((m) => (
                   <li key={m.ply}>
-                    <button onClick={() => go(m.ply)} className="flex w-full items-start gap-2.5 rounded px-2 py-3 text-left text-sm hover:bg-line lg:py-1.5">
+                    <button
+                      onClick={() => go(m.ply)}
+                      className="group flex w-full items-start gap-2.5 rounded-md p-2 text-left text-xs sm:text-sm transition-colors hover:bg-line/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                    >
                       <BadgeIcon badge={m.badge} size={20} className="mt-0.5 shrink-0" />
-                      <span className="min-w-0">
-                        <span className="font-semibold tabular-nums">
+                      <span className="min-w-0 flex-1">
+                        <span className="font-semibold tabular-nums text-fg">
                           {Math.ceil(m.ply / 2)}.{m.color === "black" ? ".." : ""} {m.san}
                         </span>{" "}
-                        <span style={{ color: badgeText(m.badge) }}>{BADGE[m.badge].phrase}</span>
-                        {m.coach && <span className="mt-0.5 block text-pretty text-muted">{gist(personalize(m.coach, myName))}</span>}
+                        <span style={{ color: badgeText(m.badge) }} className="font-medium">
+                          {BADGE[m.badge].phrase}
+                        </span>
+                        {m.coach && (
+                          <span className="mt-0.5 block text-pretty text-muted text-xs leading-normal">
+                            {gist(personalize(m.coach, myName))}
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 self-center text-muted/40 group-hover:text-muted transition-colors text-xs font-mono" aria-hidden="true">
+                        ›
                       </span>
                     </button>
                   </li>
                 ))}
               </ol>
-              <div className="flex flex-wrap gap-2">
+              <div className="shrink-0 flex flex-wrap gap-2 p-3 border-t border-line/40 bg-surface/40">
                 <button
                   onClick={() => {
                     setMode(GAME);
                     setTab("summary");
                   }}
-                  className="rounded bg-accent px-3 py-3 text-sm font-bold text-[#141311] hover:brightness-110 lg:py-1.5"
+                  className="rounded-md bg-accent px-3 py-2 text-xs sm:text-sm font-bold text-[#141311] shadow-sm transition hover:brightness-110 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   Back to summary
                 </button>
-                <button onClick={() => go(ply + 1)} className="rounded bg-bg px-3 py-3 text-sm font-semibold hover:bg-line lg:py-1.5">
+                <button
+                  onClick={() => go(ply + 1)}
+                  className="rounded-md bg-raised px-3 py-2 text-xs sm:text-sm font-semibold text-fg border border-line/60 transition hover:bg-line active:scale-[0.99] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                >
                   Keep stepping through the game
                 </button>
               </div>
@@ -593,8 +614,8 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         </div>
 
         {/* Desktop navigation; phones get the sticky bar below instead. */}
-        {/* Hidden on the Summary tab to give the key moments the height; the summary has its own start button. */}
-        <nav aria-label="Move navigation" className={`order-5 hidden gap-1 lg:order-none ${tab === "moves" ? "lg:grid" : ""}`}>
+        {/* Hidden on Summary and End recap to give the key moments the height; both have their own action buttons. */}
+        <nav aria-label="Move navigation" className={`order-5 hidden gap-1 lg:order-none ${tab === "moves" && mode.kind !== "end" ? "lg:grid" : ""}`}>
           {navRows(true)}
           <p className="pt-1 text-center text-xs text-muted">
             <kbd>←</kbd> <kbd>→</kbd> step · <kbd>N</kbd> <kbd>P</kbd> key moments · <kbd>F</kbd> flip · <kbd>S</kbd> sound · <kbd>Esc</kbd> back to the game
@@ -609,6 +630,16 @@ export function Review({ report, startFen, shared, shareUrl, initialPly, onReana
         {tab === "summary" ? (
           <button onClick={start} className={startButton}>
             {startLabel}
+          </button>
+        ) : mode.kind === "end" ? (
+          <button
+            onClick={() => {
+              setMode(GAME);
+              setTab("summary");
+            }}
+            className={startButton}
+          >
+            Back to summary
           </button>
         ) : (
           navRows(false)
