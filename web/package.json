@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "mkdir -p public/stockfish && cp node_modules/stockfish/bin/stockfish-19-lite-single.* public/stockfish/"
+    "postinstall": "mkdir -p public/stockfish && cp node_modules/stockfish/bin/stockfish-19-lite-single.* node_modules/stockfish/bin/stockfish-19-asm.js public/stockfish/ 2>/dev/null || true"
   },
   "dependencies": {
     "chess.js": "^1.4.0",

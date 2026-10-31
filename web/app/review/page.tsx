@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { AnalysisLive } from "@/components/AnalysisLive";
 import { Review } from "@/components/Review";
 import { analyzeGame, cachedReview, getReview } from "@/lib/api";
-import { analyzePositions, type PositionEval } from "@/lib/engine/pool";
+import { analyzePositions, type AnalysisQuality, type PositionEval } from "@/lib/engine/pool";
 import { parsePgn, reportPgn, START_FEN } from "@/lib/pgn";
 import type { Report } from "@/lib/types";
 
@@ -45,8 +45,10 @@ export default function ReviewPage() {
         if (ctrl.signal.aborted) return;
         const live: (PositionEval | undefined)[] = new Array(fens.length);
         setState({ stage: "engine", game, evals: [...live] });
+        const quality = ((typeof window !== "undefined" ? localStorage.getItem("hindsight_quality") : null) as AnalysisQuality) || "standard";
         const evals = await analyzePositions(fens, {
           signal: ctrl.signal,
+          quality,
           onPosition: (i, ev) => {
             live[i] = ev;
             setState({ stage: "engine", game, evals: [...live] });
