@@ -1,8 +1,12 @@
-# Hindsight
+# Hindsight Chess
+
+**Live: [hindsight.almadih.dev](https://hindsight.almadih.dev)** · [How it works](https://hindsight.almadih.dev/how-it-works)
+
+![Hindsight Chess](web/app/opengraph-image.png)
 
 Free chess game review: paste a PGN or enter a Chess.com / Lichess username, and every move gets a verdict
 (Brilliant … Blunder), with accuracy, a single-game rating estimate, coach notes, the engine's follow-up line
-and a retry mode. Live at https://chess-review.almadih.workers.dev.
+and a retry mode. No account, no daily limit.
 
 Stockfish runs in the browser; a Cloudflare Python Worker classifies moves, stores shared reviews in D1,
 caches game lists in KV and writes coach notes with Workers AI.
