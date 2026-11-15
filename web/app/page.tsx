@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BadgeIcon } from "@/components/BadgeIcon";
@@ -28,6 +29,33 @@ const END_MS = 5600;
 const STILL_PLY = DEMO.moves.findIndex((m) => m.san === "Qb8+") + 1;
 // The three coached moments that decided the game, chosen the same way as the review page's Key moments.
 const TURNING = keyMoments(DEMO.moves.filter((m) => m.coach), 3);
+
+const SITE = "https://hindsight.almadih.dev";
+const JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", name: "Hindsight Chess", url: SITE },
+    {
+      "@type": "WebApplication",
+      name: "Hindsight Chess",
+      url: SITE,
+      applicationCategory: "GameApplication",
+      operatingSystem: "Any",
+      browserRequirements: "Requires JavaScript",
+      isAccessibleForFree: true,
+      offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
+      author: { "@id": `${SITE}/#author` },
+    },
+    { "@type": "Person", "@id": `${SITE}/#author`, name: "Almadih", url: "https://almadih.dev", sameAs: ["https://github.com/Almadih"] },
+  ],
+}).replace(/</g, "\\u003c");
+
+const FAQ = [
+  ["Is it really free?", "Yes. Unlimited reviews, no account, no daily cap."],
+  ["How do I review a Chess.com game?", "Pick Chess.com, type your username and choose a game."],
+  ["Does it work with Lichess?", "Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines."],
+  ["Which engine does it use?", "Stockfish 19, run in your browser at depth 16 by default."],
+] as const;
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const subscribeReduced = (cb: () => void) => {
@@ -93,10 +121,16 @@ export default function Home() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
       <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
         <header className="flex items-baseline justify-between gap-4 lg:col-span-2">
-          <p className="text-2xl font-extrabold tracking-[-0.04em]">Hindsight</p>
+          <Link href="/" className="text-2xl font-extrabold tracking-[-0.04em]">
+            Hindsight
+          </Link>
           <div className="flex items-center gap-4">
+            <Link href="/how-it-works" className="text-sm text-muted hover:text-fg">
+              How it works
+            </Link>
             <p className="hidden text-sm text-muted sm:block">Free · No account · Chess.com & Lichess</p>
             <button
               onClick={toggleSound}
@@ -111,9 +145,10 @@ export default function Home() {
 
         <div className="lg:col-start-2 lg:row-start-2 lg:pt-8">
           <h1 className="text-[clamp(2.4rem,5.4vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">Every move, judged.</h1>
-          <p className="mt-5 hidden max-w-[34ch] text-lg text-pretty text-muted sm:block">
+          <p className="mt-5 max-w-[34ch] text-lg text-pretty text-muted">
             See where your game turned: every move rated, mistakes explained, the better move on the board.
           </p>
+          <p className="mt-3 max-w-[40ch] text-sm text-muted">Free chess game review for Chess.com &amp; Lichess. Unlimited, powered by Stockfish.</p>
         </div>
 
         <div
@@ -205,6 +240,28 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+        <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Questions</h2>
+        <div className="mt-8 grid max-w-[60ch] gap-6">
+          {FAQ.map(([q, a]) => (
+            <div key={q}>
+              <h3 className="text-xl font-bold">{q}</h3>
+              <p className="mt-2 text-pretty text-muted">{a}</p>
+            </div>
+          ))}
+          <div>
+            <h3 className="text-xl font-bold">How is accuracy calculated?</h3>
+            <p className="mt-2 text-pretty text-muted">
+              From the winning chances each move loses, checked against Chess.com&rsquo;s own numbers.{" "}
+              <Link href="/how-it-works" className="underline decoration-line underline-offset-4 hover:text-fg">
+                How it works
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-24 sm:px-8 lg:pt-32">
         <div className="flex flex-col items-start gap-8 border-t border-line pt-14 md:flex-row md:items-end md:justify-between">
           <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">Your last game is waiting.</h2>
@@ -215,6 +272,15 @@ export default function Home() {
       </section>
 
       <footer className="mx-auto w-full max-w-[1400px] px-4 pb-10 text-sm text-muted sm:px-8">
+        <nav className="mb-4 flex gap-5">
+          <Link href="/how-it-works" className="hover:text-fg">
+            How it works
+          </Link>
+          <a href="https://github.com/Almadih/hindsight" className="hover:text-fg">
+            GitHub
+          </a>
+        </nav>
+        <p className="mb-2">Built by Almadih.</p>
         <p className="max-w-[80ch] text-pretty">
           Hindsight is an independent project, not affiliated with or endorsed by Chess.com or Lichess. Reviews are shared: once a game has been reviewed, anyone can open
           it. Sounds from Pixabay. Chess pieces: Staunty by sadsnake1,{" "}

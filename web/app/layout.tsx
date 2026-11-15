@@ -12,9 +12,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "Hindsight Chess: Free Chess Game Review for Chess.com & Lichess";
+const description =
+  "Enter your Chess.com or Lichess username and get every move rated, from brilliant to blunder, with the better move shown. Free, unlimited, no account.";
+
 export const metadata: Metadata = {
-  title: "Hindsight: free chess game review",
-  description: "Every move of your Chess.com or Lichess game rated, the mistakes explained, the better move shown. Free, no account.",
+  metadataBase: new URL("https://hindsight.almadih.dev"),
+  title: { default: title, template: "%s · Hindsight Chess" },
+  description,
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: "Hindsight Chess", url: "/", title, description },
+  twitter: { card: "summary_large_image" },
+  authors: [{ name: "Almadih", url: "https://github.com/Almadih" }],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

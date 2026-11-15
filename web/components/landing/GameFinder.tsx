@@ -91,7 +91,7 @@ export function GameFinder({ onGames, onPgn, inputId = "username" }: Props) {
                 role="radio"
                 aria-checked={platform === p.id}
                 onClick={() => setPlatform(p.id)}
-                className="rounded-md px-3 py-1 text-muted hover:text-fg aria-checked:bg-raised aria-checked:text-fg"
+                className="rounded-md px-3 py-2.5 text-muted hover:text-fg aria-checked:bg-raised aria-checked:text-fg"
               >
                 {p.label}
               </button>
@@ -125,7 +125,7 @@ export function GameFinder({ onGames, onPgn, inputId = "username" }: Props) {
             ) : (
               <p className="text-muted">Free. No account.</p>
             )}
-            <button type="button" onClick={() => setPasting(true)} className="shrink-0 font-semibold text-muted underline decoration-line underline-offset-4 hover:text-fg">
+            <button type="button" onClick={() => setPasting(true)} className="shrink-0 py-2 font-semibold text-muted underline decoration-line underline-offset-4 hover:text-fg">
               or paste a PGN
             </button>
           </div>
