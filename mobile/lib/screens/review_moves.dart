@@ -519,9 +519,12 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
     final bad = canRetry(m);
     final playedBest = m.bestUci == m.uci;
     final hasLine = m.mateWhite != 0 && m.bestPv.length > (playedBest ? 1 : 0);
+    final forced = m.badge != Badge.book && isForced(_prevFen);
     // Like Chess.com, errors show the answer (arrow, best move, coach note) at once; Retry is still offered.
     final sub = bestSan != null
         ? 'Best was $bestSan'
+        : forced
+        ? forcedRule
         : m.badge == Badge.book && widget.report.opening != null
         ? widget.report.opening!
         : meta.rule;
@@ -539,7 +542,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
       CoachBubble(fill: true, 
         text: text,
         badge: m.badge,
-        title: '${m.san} ${meta.phrase}',
+        title: '${m.san} ${forced ? forcedPhrase : meta.phrase}',
         eval: formatEval(m),
       ),
       [

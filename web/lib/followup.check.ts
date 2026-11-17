@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { parseInfo } from "./engine/uci.ts";
 import { parsePgn, reportPgn, START_FEN } from "./pgn.ts";
-import { capturedPieces, decidingMoments, followUpLine, isGoodRetry, keyMoments, personalize, whiteWinPct } from "./review.ts";
+import { capturedPieces, decidingMoments, followUpLine, isForced, isGoodRetry, keyMoments, personalize, whiteWinPct } from "./review.ts";
 import type { ReviewMove } from "./types.ts";
 
 // Scholar's mate: the line stops at mate even though the PV goes on.
@@ -70,5 +70,10 @@ assert.equal(decidingMoments(sampleMoves, "white").mine, true);
 assert.equal(isGoodRetry(sampleMoves[1] as ReviewMove, "e7e5"), true);
 assert.equal(isGoodRetry(sampleMoves[1] as ReviewMove, "c7c5"), true);
 assert.equal(isGoodRetry(sampleMoves[1] as ReviewMove, "a7a6"), false);
+
+// Forced: Kxg2 is White's only legal move; a lone promotion still leaves four choices.
+assert.equal(isForced("7k/8/8/8/8/8/6q1/7K w - - 0 1"), true);
+assert.equal(isForced("7k/P7/8/8/8/8/5q2/7K w - - 0 1"), false);
+assert.equal(isForced(START_FEN), false);
 
 console.log("followUpLine ok");

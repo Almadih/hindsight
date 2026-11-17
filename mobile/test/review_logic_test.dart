@@ -77,4 +77,10 @@ void main() {
     final mine = decidingMoments(report.moves, Side.white);
     expect(mine.mine, mine.moments.any((m) => m.color == Side.white));
   });
+
+  test('isForced: one legal move, but not a lone promotion', () {
+    expect(isForced('7k/8/8/8/8/8/6q1/7K w - - 0 1'), isTrue);
+    expect(isForced('7k/P7/8/8/8/8/5q2/7K w - - 0 1'), isFalse);
+    expect(isForced(fen), isFalse);
+  });
 }
