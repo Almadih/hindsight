@@ -12,13 +12,13 @@ Future<void> openReviewByHash(BuildContext context, String hash, {int? ply}) asy
   try {
     final report = await getReview(hash);
     if (report == null) {
-      messenger?.showSnackBar(const SnackBar(content: Text('That review was not found.')));
+      messenger?.showSnackBar(const SnackBar(content: Text("This review isn't available.")));
       return;
     }
     final fen = report.headers['FEN'] ?? standardFen;
     nav.push(MaterialPageRoute(builder: (_) => ReviewSummaryScreen(report: report, startFen: fen)));
     if (ply != null) nav.push(MaterialPageRoute(builder: (_) => ReviewMovesScreen(report: report, startFen: fen, initialPly: ply)));
   } catch (e) {
-    messenger?.showSnackBar(SnackBar(content: Text(e is ApiError ? e.message : 'Could not load the review.')));
+    messenger?.showSnackBar(SnackBar(content: Text(friendlyError(e))));
   }
 }

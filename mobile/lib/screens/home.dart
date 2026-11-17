@@ -8,6 +8,7 @@ import '../prefs.dart';
 import '../review_logic.dart';
 import '../theme.dart';
 import '../widgets/badge_icon.dart';
+import '../widgets/error_retry.dart';
 import '../widgets/green_button.dart';
 import 'analyzing.dart';
 import 'how_it_works.dart';
@@ -17,7 +18,7 @@ const _faq = [
   ['Is it really free?', 'Yes. Unlimited reviews, no account, no daily cap.'],
   ['How do I review a Chess.com game?', 'Pick Chess.com, type your username and choose a game.'],
   ['Does it work with Lichess?', 'Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines.'],
-  ['Which engine does it use?', 'Stockfish 19, run in your browser at depth 16 by default.'],
+  ['Which engine does it use?', 'Stockfish 19, at depth 16 by default (quick 14, deep 18).'],
 ];
 
 const _scale = [
@@ -68,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late String _platform = lastPlatform;
   late final _name = TextEditingController(text: myUsernames.firstOrNull ?? '');
   List<GameSummary>? _games;
-  String? _error;
+  Object? _error;
   bool _loading = false;
   String _shownFor = '';
 
@@ -81,8 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _find() async {
     final u = _name.text.trim();
     if (u.isEmpty) return;
-    rememberMe(u);
-    lastPlatform = _platform;
     FocusScope.of(context).unfocus();
     setState(() {
       _loading = true;
@@ -92,12 +91,14 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final games = await fetchGames(_platform, u);
       if (!mounted) return;
+      rememberMe(u);
+      lastPlatform = _platform;
       setState(() {
         _games = games;
         _shownFor = u;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e is ApiError ? e.message : 'Could not load games. Check your connection.');
+      if (mounted) setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -109,15 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _push(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
 
   Future<void> _openUrl(String url) async {
-
     // External browser, so the web version and the site open with the user's own session and back stack.
-
-    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) && mounted) {
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t open $url')));
-
-    }
-
+    var ok = false;
+    try {
+      ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {}
+    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t open $url')));
   }
 
   Future<void> _paste() async {
@@ -134,7 +132,10 @@ class _HomeScreenState extends State<HomeScreen> {
             autofocus: true,
             minLines: 6,
             maxLines: 10,
-            decoration: const InputDecoration(hintText: 'Paste a PGN', border: OutlineInputBorder()),
+            keyboardType: TextInputType.multiline,
+            enableSuggestions: false,
+            autocorrect: false,
+            decoration: const InputDecoration(labelText: 'PGN', hintText: 'Paste a PGN', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 12),
           GreenButton('Analyze', onPressed: () => Navigator.pop(ctx, c.text.trim())),
@@ -144,21 +145,6 @@ class _HomeScreenState extends State<HomeScreen> {
     c.dispose();
     if (pgn != null && pgn.isNotEmpty && mounted) _analyze(pgn);
   }
-
-  Widget _toggle(String value, String label) => Expanded(
-        child: GestureDetector(
-          onTap: () => setState(() => _platform = value),
-          child: Container(
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: _platform == value ? kGreen : kCard,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          ),
-        ),
-      );
 
   Widget _h2(String t) => Padding(
         padding: const EdgeInsets.only(top: 32, bottom: 12),
@@ -179,12 +165,38 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 4),
               const Text('Free chess game review for Chess.com & Lichess. Unlimited, powered by Stockfish.',
                   style: TextStyle(fontSize: 13, color: Colors.white60)),
+              const SizedBox(height: 16),
+              // Above the finder so a loaded game list never pushes it out of view.
+              Card(
+                color: kCard,
+                child: ListTile(
+                  leading: const Icon(Icons.play_circle_outline, color: kGreen),
+                  title: const Text('Try a demo review'),
+                  subtitle: const Text('Morphy\'s Opera Game, Paris 1858'),
+                  onTap: () => openDemo(context),
+                ),
+              ),
               const SizedBox(height: 20),
-              Row(children: [_toggle('chesscom', 'Chess.com'), const SizedBox(width: 8), _toggle('lichess', 'Lichess')]),
+              SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: 'chesscom', label: Text('Chess.com')),
+                  ButtonSegment(value: 'lichess', label: Text('Lichess')),
+                ],
+                selected: {_platform},
+                onSelectionChanged: (s) => setState(() => _platform = s.first),
+                style: ButtonStyle(
+                  minimumSize: const WidgetStatePropertyAll(Size.fromHeight(48)),
+                  backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? kGreen : kCard),
+                  foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? kInk : Colors.white),
+                  textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: _name,
                 autocorrect: false,
+                enableSuggestions: false,
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _find(),
                 decoration: const InputDecoration(
@@ -212,16 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
               ]),
               _results(),
-              const SizedBox(height: 8),
-              Card(
-                color: kCard,
-                child: ListTile(
-                  leading: const Icon(Icons.play_circle_outline, color: kGreen),
-                  title: const Text('Try a demo review'),
-                  subtitle: const Text('Morphy\'s Opera Game, Paris 1858'),
-                  onTap: () => openDemo(context),
-                ),
-              ),
               _h2('Ten verdicts, one scale'),
               const Text('Every move gets one, measured by how much of your winning chances it kept or gave away.',
                   style: TextStyle(color: Colors.white70)),
@@ -257,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _results() {
     if (_loading) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-    if (_error != null) return Padding(padding: const EdgeInsets.all(16), child: Text(_error!, style: const TextStyle(color: Colors.redAccent)));
+    if (_error != null) return ErrorRetry(error: _error!, onRetry: _find, compact: true);
     final games = _games;
     if (games == null) return const SizedBox.shrink();
     if (games.isEmpty) return const Padding(padding: EdgeInsets.all(16), child: Text('No recent games found.'));

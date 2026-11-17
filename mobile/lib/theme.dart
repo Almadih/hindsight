@@ -15,6 +15,10 @@ const kBoardDark = Color(0xFF739552);
 const kSelect = Color(0xFFF6F669);
 const kLastMove = Color(0xFFE3C9A5);
 const kRaisedDark = Color(0xFF454340);
+const kDisabled = Color(0x3DFFFFFF);
+const kCoach = Color(0xFF8C5A3C);
+const kChip = Color(0xFFEEEEEE);
+const kDanger = Color(0xFFFF7769);
 
 ThemeData appTheme() => ThemeData(
       brightness: Brightness.dark,

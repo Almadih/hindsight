@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -17,11 +19,15 @@ class ApiError implements Exception {
   String toString() => message;
 }
 
+/// Long enough for /api/analyze (coach notes take a few seconds), short enough that a dead network surfaces.
+const _timeout = Duration(seconds: 30);
+
 Future<dynamic> _request(String path, {Object? body}) async {
   final uri = Uri.parse('$apiBase$path');
-  final res = body == null
-      ? await client.get(uri)
-      : await client.post(uri, headers: {'content-type': 'application/json'}, body: jsonEncode(body));
+  final res = await (body == null
+          ? client.get(uri)
+          : client.post(uri, headers: {'content-type': 'application/json'}, body: jsonEncode(body)))
+      .timeout(_timeout);
   dynamic json;
   try {
     json = jsonDecode(utf8.decode(res.bodyBytes));
@@ -32,6 +38,24 @@ Future<dynamic> _request(String path, {Object? body}) async {
     throw ApiError(detail is String ? detail : 'Request failed (${res.statusCode})', res.statusCode);
   }
   return json;
+}
+
+/// A sentence a person can act on, for any error the API layer or the network throws.
+String friendlyError(Object e) {
+  if (e is TimeoutException) return 'The server took too long to answer. Check your connection and try again.';
+  if (e is SocketException || e is http.ClientException || e is HandshakeException) {
+    return 'Can’t reach Hindsight. Check your internet connection and try again.';
+  }
+  if (e is ApiError) {
+    return switch (e.status) {
+      429 => 'Too many new reviews from this connection right now. Try again in a minute.',
+      >= 500 => 'Hindsight’s server had a problem. Try again in a moment.',
+      // Our own 4xx details are plain sentences ("player not found", "invalid PGN: …"): capitalize them.
+      _ => e.message.isEmpty ? 'Something went wrong.' : '${e.message[0].toUpperCase()}${e.message.substring(1)}${e.message.endsWith('.') ? '' : '.'}',
+    };
+  }
+  if (e is FormatException) return 'That doesn’t look like a valid PGN.';
+  return 'Something went wrong. Try again.';
 }
 
 Future<List<GameSummary>> fetchGames(String platform, String username) async {

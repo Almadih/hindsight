@@ -133,10 +133,11 @@ class PlayerGame {
       : hash = j['hash'],
         side = j['side'],
         opponent = j['opponent'],
+        date = '${j['date'] ?? ''}'.split('T').first,
         result = j['result'],
         accuracy = _d(j['accuracy']),
         estElo = _i(j['estElo']);
-  final String hash, side, opponent, result; // result: won | lost | draw | unknown
+  final String hash, side, opponent, result, date; // result: won | lost | draw | unknown
   final double? accuracy;
   final int? estElo;
 }

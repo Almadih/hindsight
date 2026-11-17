@@ -8,6 +8,7 @@ import '../prefs.dart' as prefs;
 import '../review_logic.dart';
 import '../theme.dart';
 import '../widgets/board.dart';
+import '../widgets/error_retry.dart';
 import '../widgets/eval_bar.dart';
 import '../widgets/green_button.dart';
 import '../widgets/player_bar.dart';
@@ -29,7 +30,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   int _done = 0;
   PositionEval? _ev; // the last evaluated position
   bool _classifying = false, _flipped = false;
-  String? _error;
+  Object? _error;
 
   @override
   void initState() {
@@ -70,8 +71,19 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     } on StateError {
       // cancelled: the screen is gone
     } catch (e) {
-      if (mounted) setState(() => _error = e is FormatException ? e.message : '$e');
+      if (mounted) setState(() => _error = e);
     }
+  }
+
+  void _retry() {
+    setState(() {
+      _error = null;
+      _fens = const [];
+      _done = 0;
+      _ev = null;
+      _classifying = false;
+    });
+    _run();
   }
 
   void _open(Report report, String startFen, {required bool shared, required bool linkable}) => Navigator.of(context).pushReplacement(
@@ -92,7 +104,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   Widget build(BuildContext context) {
     final String text;
     if (_error != null) {
-      text = _error!;
+      text = '';
     } else if (_classifying) {
       text = 'Judging every move and writing coach notes…';
     } else if (_fens.isEmpty) {
@@ -116,7 +128,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         title: const Text('Analyzing'),
         actions: [IconButton(tooltip: 'Flip board', onPressed: () => setState(() => _flipped = !_flipped), icon: const Icon(Icons.swap_vert))],
       ),
-      body: Padding(
+      body: SafeArea(
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (fen != null && _error == null)
@@ -138,12 +151,17 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           else
             const Spacer(),
           const SizedBox(height: 16),
-          Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          if (_error != null)
+            ErrorRetry(error: _error!, onRetry: _error is FormatException ? null : _retry, compact: true)
+          else
+            Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           if (_error != null)
             GreenButton('Choose another game', onPressed: () => Navigator.of(context).pop())
           else
             LinearProgressIndicator(
+              semanticsLabel: 'Analysis progress',
+              semanticsValue: '$_done of ${_fens.length} positions',
               value: _fens.isEmpty || _classifying ? null : _done / _fens.length,
               color: kGreen,
               backgroundColor: kCard,
@@ -155,6 +173,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
             ),
           if (_error != null || _fens.isEmpty) const Spacer(),
         ]),
+      ),
       ),
     );
   }

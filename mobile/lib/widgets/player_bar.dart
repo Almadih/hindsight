@@ -26,13 +26,13 @@ class PlayerBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: side == Side.white ? kEvalWhite : kTrack,
             borderRadius: BorderRadius.circular(3),
-            border: side == Side.black ? Border.all(color: Colors.white24) : null,
+            border: side == Side.black ? Border.all(color: kDisabled) : null,
           ),
         ),
         const SizedBox(width: 8),
         Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)))),
-        if (you) const Text(' (you)', style: TextStyle(color: Colors.white60)),
-        if (rating != null) Text(' ($rating)', style: const TextStyle(color: Colors.white60)),
+        if (you) const Text(' (you)', style: TextStyle(color: kMuted)),
+        if (rating != null) Text(' ($rating)', style: const TextStyle(color: kMuted)),
         const Spacer(),
         for (var i = 0; i < captured.length; i++)
           Padding(
@@ -43,7 +43,7 @@ class PlayerBar extends StatelessWidget {
               child: SvgPicture.asset('assets/pieces/${captured[i]}.svg', width: 16, height: 16),
             ),
           ),
-        if (lead > 0) Padding(padding: const EdgeInsets.only(left: 6), child: Text('+$lead', style: const TextStyle(color: Colors.white60))),
+        if (lead > 0) Padding(padding: const EdgeInsets.only(left: 6), child: Text('+$lead', style: const TextStyle(color: kMuted))),
       ]),
     );
   }

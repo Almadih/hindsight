@@ -28,7 +28,7 @@ class HowItWorksScreen extends StatelessWidget {
               const SizedBox(height: 12),
               const Text('Updated November 2026.', style: TextStyle(fontSize: 13, color: Colors.white60)),
               _h('Engine'),
-              _p('Stockfish 19 runs on your device, so nothing is queued and there is no cap. Quick, standard and deep reviews search to depth '
+              _p('Stockfish 19 checks every position. Quick, standard and deep reviews search to depth '
                   '${qualityDepth['quick']}, ${qualityDepth['standard']} and ${qualityDepth['deep']}.'),
               _h('Winning chances'),
               _p('The engine scores each position in centipawns (cp). Hindsight turns that into a chance of winning:'),

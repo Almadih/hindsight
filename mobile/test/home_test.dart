@@ -20,4 +20,15 @@ void main() {
     expect(find.text('Is it really free?'), findsOneWidget);
     expect(find.text('Try a demo review'), findsOneWidget);
   });
+
+  testWidgets('platform control exposes both options and selects Lichess', (tester) async {
+    final sem = tester.ensureSemantics();
+    await tester.pumpWidget(MaterialApp(theme: appTheme(), home: const HomeScreen()));
+    expect(find.bySemanticsLabel('Chess.com'), findsOneWidget);
+    expect(find.bySemanticsLabel('Lichess'), findsOneWidget);
+    await tester.tap(find.text('Lichess'));
+    await tester.pump();
+    expect(tester.widget<SegmentedButton<String>>(find.byType(SegmentedButton<String>)).selected, {'lichess'});
+    sem.dispose();
+  });
 }

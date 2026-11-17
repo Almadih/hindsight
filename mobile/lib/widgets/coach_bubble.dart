@@ -31,7 +31,7 @@ class CoachBubble extends StatelessWidget {
               Container(
                 margin: const EdgeInsets.only(left: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFFEEEEEE), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: kChip, borderRadius: BorderRadius.circular(6)),
                 child: Text(eval!, style: const TextStyle(color: ink, fontSize: 13.5, fontWeight: FontWeight.w800)),
               ),
           ]),
@@ -43,7 +43,7 @@ class CoachBubble extends StatelessWidget {
       // Pinned top-left at a fixed size, whatever the text length.
       const Align(
         alignment: Alignment.topCenter,
-        child: CircleAvatar(radius: 24, backgroundColor: Color(0xFF8C5A3C), child: Icon(Icons.face, size: 30, color: Colors.white)),
+        child: CircleAvatar(radius: 24, backgroundColor: kCoach, child: Icon(Icons.face, size: 30, color: Colors.white)),
       ),
       const SizedBox(width: 12),
       Expanded(

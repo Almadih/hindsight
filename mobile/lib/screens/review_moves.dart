@@ -214,7 +214,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
   }
 
   Widget _tb(String label, IconData icon, VoidCallback? onTap) {
-    final c = onTap == null ? Colors.white24 : Colors.white54;
+    final c = onTap == null ? kDisabled : kMuted;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -224,7 +224,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 26, color: c),
-            Text(label, style: TextStyle(fontSize: 11, color: c)),
+            Text(label, style: TextStyle(fontSize: 12, color: c)),
           ],
         ),
       ),
@@ -300,7 +300,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
             padding: const EdgeInsets.only(left: 14, right: 6),
             child: Text(
               m.color == Side.white ? '$n.' : '$n...',
-              style: const TextStyle(fontSize: 20, color: Colors.white60),
+              style: const TextStyle(fontSize: 20, color: kMuted),
             ),
           ),
         );
@@ -325,7 +325,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
             decoration: cur
                 ? const BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.white54, width: 3),
+                      bottom: BorderSide(color: kMuted, width: 3),
                     ),
                   )
                 : null,
@@ -334,7 +334,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: cur ? Colors.white : Colors.white70,
+                color: cur ? Colors.white : kMuted,
               ),
             ),
           ),
@@ -408,7 +408,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: i < _lineIdx ? Colors.white : Colors.white54,
+                          color: i < _lineIdx ? Colors.white : kMuted,
                         ),
                       ),
                     ),
@@ -569,7 +569,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
         const SizedBox(height: 6),
         Text(
           takeaway(widget.report, names, _me),
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          style: const TextStyle(color: kMuted, fontSize: 16),
         ),
         const SizedBox(height: 12),
         for (final m in _moments.moments)
@@ -633,9 +633,6 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
         m.bestUci != m.uci &&
         m.badge != Badge.book &&
         m.badge != Badge.best;
-    final hintBest = onGame && m == null
-        ? widget.report.moves.firstOrNull?.bestUci
-        : null;
     final (card, left, main) = _mode == _Mode.end
         ? (const SizedBox(), const <Widget>[], null)
         : _card();
@@ -731,7 +728,8 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                                   : solvedNow
                                   ? Badge.best
                                   : null,
-                              arrows: showBest ? [m.bestUci!] : [?hintBest],
+                              // No arrow before the first move: the review hasn't started, so there's nothing to judge yet.
+                              arrows: showBest ? [m.bestUci!] : const [],
                               selected: _selected,
                               onTap: retrying && !solvedNow ? _tapSquare : null,
                               onMove: retrying && !solvedNow ? _tryMove : null,

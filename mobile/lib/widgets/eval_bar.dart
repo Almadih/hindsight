@@ -53,8 +53,9 @@ class EvalBar extends StatelessWidget {
               child: Text(
                 formatEval(ev).replaceFirst('+', ''),
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                   color: whiteAhead ? kInk : kEvalWhite,
                 ),
               ),
