@@ -153,7 +153,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Hindsight')),
+        appBar: AppBar(
+          title: Row(mainAxisSize: MainAxisSize.min, children: [
+            // The logo is decorative here: the title text already names the app.
+            Image.asset('assets/brand/mark.png', width: 30, height: 30, excludeFromSemantics: true),
+            const SizedBox(width: 8),
+            const Text('Hindsight'),
+          ]),
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),

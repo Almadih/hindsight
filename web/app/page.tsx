@@ -124,7 +124,10 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
       <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
         <header className="flex items-baseline justify-between gap-4 lg:col-span-2">
-          <Link href="/" className="text-2xl font-extrabold tracking-[-0.04em]">
+          <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-[-0.04em]">
+            {/* Static export serves /brand/mark.svg as-is; next/image would need SVG opt-in for no gain. The text names the link, so the mark is decorative. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/mark.svg" alt="" width={27} height={28} className="self-center" />
             Hindsight
           </Link>
           <div className="flex items-center gap-4">

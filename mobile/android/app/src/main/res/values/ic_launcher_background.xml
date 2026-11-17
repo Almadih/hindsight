@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Graphite ground from DESIGN.md: the tile behind the Brilliant Bishop. -->
+    <color name="ic_launcher_background">#1C1B19</color>
+</resources>
