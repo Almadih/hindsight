@@ -43,7 +43,7 @@ cd web && npm run build && cd ../api && uv run pywrangler deploy
 
 Schema changes: `uv run pywrangler d1 execute DB --remote --file schema.sql` (statements are idempotent).
 
-Pushes to `main` deploy automatically (`.github/workflows/deploy.yml`, needs the `CLOUDFLARE_API_TOKEN` repository secret). It also applies new files in `api/migrations` with `pywrangler d1 migrations apply DB --remote`.
+Pushes to `main` deploy automatically (`.github/workflows/deploy.yml`, needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets). It also applies new files in `api/migrations` with `pywrangler d1 migrations apply DB --remote`.
 
 ## Third-party assets
 
