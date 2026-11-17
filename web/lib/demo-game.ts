@@ -5,7 +5,7 @@ import type { ReviewMove, WhiteEval } from "./types";
 type DemoMove = Pick<ReviewMove, "ply" | "color" | "san" | "uci" | "fen" | "badge" | "wBefore" | "wAfter" | "evalWhite" | "mateWhite" | "bestUci" | "coach">;
 
 export const DEMO: { opening: string; start: WhiteEval; accuracy: { white: number; black: number }; moves: DemoMove[] } = {
- "opening": "C41 Philidor Defense",
+ "opening": "Philidor Defense",
  "start": {
   "evalWhite": 0.28,
   "mateWhite": null
