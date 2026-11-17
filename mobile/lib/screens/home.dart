@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart' hide Badge;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../demo.dart';
@@ -106,6 +107,18 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => AnalyzingScreen(pgn: pgn)));
 
   void _push(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+
+  Future<void> _openUrl(String url) async {
+
+    // External browser, so the web version and the site open with the user's own session and back stack.
+
+    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) && mounted) {
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t open $url')));
+
+    }
+
+  }
 
   Future<void> _paste() async {
     final c = TextEditingController();
@@ -225,10 +238,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text('From the winning chances each move loses, checked against Chess.com’s own numbers.', style: TextStyle(color: Colors.white70)),
               ),
               const SizedBox(height: 24),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(onPressed: () => _push(const HowItWorksScreen()), child: const Text('How it works')),
-              ),
+              Wrap(spacing: 4, children: [
+                TextButton(onPressed: () => _push(const HowItWorksScreen()), child: const Text('How it works')),
+                TextButton(onPressed: () => _openUrl('https://hindsight.almadih.dev'), child: const Text('Web version')),
+                TextButton(onPressed: () => _openUrl('https://almadih.dev'), child: const Text('almadih.dev')),
+              ]),
               const Text(
                 'Built by Almadih. Hindsight is an independent project, not affiliated with or endorsed by Chess.com or Lichess. '
                 'Reviews are shared: once a game has been reviewed, anyone can open it. Sounds from Pixabay. '
