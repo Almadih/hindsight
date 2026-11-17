@@ -55,6 +55,8 @@ class ReviewMenu extends StatelessWidget {
           switch (v) {
             case 'share':
               SharePlus.instance.share(ShareParams(text: 'https://hindsight.almadih.dev/review?g=${report.hash}&ply=$ply'));
+            case 'sound':
+              prefs.soundOn = !prefs.soundOn;
             case 'reanalyze':
               _reanalyze(context);
             case 'quality':
@@ -63,6 +65,7 @@ class ReviewMenu extends StatelessWidget {
         },
         itemBuilder: (_) => [
           if (linkable) const PopupMenuItem(value: 'share', child: Text('Share link')),
+          CheckedPopupMenuItem(value: 'sound', checked: prefs.soundOn, child: const Text('Sound')),
           const PopupMenuItem(value: 'reanalyze', child: Text('Re-analyze privately')),
           const PopupMenuItem(value: 'quality', child: Text('Analysis quality')),
         ],

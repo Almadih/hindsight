@@ -3,9 +3,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models.dart';
 import '../review_logic.dart';
+import '../theme.dart';
 import 'badge_icon.dart';
 
-const _light = Color(0xFFEBECD0), _dark = Color(0xFF739552);
+const _names = {'P': 'pawn', 'N': 'knight', 'B': 'bishop', 'R': 'rook', 'Q': 'queen', 'K': 'king'};
 
 int _sq(String name) => (name.codeUnitAt(1) - 49) * 8 + name.codeUnitAt(0) - 97;
 
@@ -89,6 +90,29 @@ class _ChessBoardState extends State<ChessBoard> {
     return Offset((widget.flipped ? 7 - f : f) * s, (widget.flipped ? r : 7 - r) * s);
   }
 
+  Widget _semSquare(int sq, double s, String? lm) {
+    final name = String.fromCharCodes([97 + sq % 8, 49 + sq ~/ 8]);
+    final p = _pieces[sq];
+    final hints = [
+      if (widget.selected == name) 'selected',
+      if (lm != null && (name == lm.substring(0, 2) || name == lm.substring(2, 4))) 'last move',
+    ];
+    final o = _pos(sq, s);
+    return Positioned(
+      left: o.dx,
+      top: o.dy,
+      width: s,
+      height: s,
+      child: Semantics(
+        container: true, // one TalkBack stop per square, not one merged label
+        label: '$name, ${p == null ? 'empty' : '${p[0] == 'w' ? 'white' : 'black'} ${_names[p[1]]}'}',
+        hint: hints.isEmpty ? null : hints.join(', '),
+        button: widget.onTap != null,
+        onTap: widget.onTap == null ? null : () => widget.onTap!(name),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.size / 8;
@@ -109,6 +133,7 @@ class _ChessBoardState extends State<ChessBoard> {
       return String.fromCharCodes([97 + (widget.flipped ? 7 - x : x), 49 + (widget.flipped ? y : 7 - y)]);
     }
 
+    final noAnim = MediaQuery.disableAnimationsOf(context);
     final dragging = _dragFrom;
     final fxColor = widget.badge != null && const {Badge.brilliant, Badge.great, Badge.blunder, Badge.miss}.contains(widget.badge)
         ? badgeMeta[widget.badge]!.color
@@ -139,7 +164,12 @@ class _ChessBoardState extends State<ChessBoard> {
       child: SizedBox(
         width: widget.size,
         height: widget.size,
-        child: Stack(clipBehavior: Clip.none, children: [
+        child: Semantics(
+          container: true,
+          explicitChildNodes: true,
+          label: widget.arrows.isEmpty ? null : widget.arrows.map((a) => 'Best move arrow from ${a.substring(0, 2)} to ${a.substring(2, 4)}').join('. '),
+          child: Stack(clipBehavior: Clip.none, children: [
+          ExcludeSemantics(child: Stack(clipBehavior: Clip.none, children: [
           CustomPaint(
             size: Size.square(widget.size),
             painter: _SquaresPainter(widget.flipped, lm, widget.selected),
@@ -147,14 +177,14 @@ class _ChessBoardState extends State<ChessBoard> {
           for (final e in _ids.entries)
             AnimatedPositioned(
               key: ValueKey(e.value),
-              duration: const Duration(milliseconds: 150),
+              duration: noAnim ? Duration.zero : const Duration(milliseconds: 150),
               left: _pos(e.key, s).dx,
               top: _pos(e.key, s).dy,
               width: s,
               height: s,
               child: Opacity(opacity: e.key == dragging ? 0.3 : 1, child: SvgPicture.asset('assets/pieces/${_pieces[e.key]}.svg')),
             ),
-          if (fxColor != null && to != null)
+          if (fxColor != null && to != null && !noAnim)
             Positioned(
               left: _pos(to, s).dx,
               top: _pos(to, s).dy,
@@ -189,7 +219,10 @@ class _ChessBoardState extends State<ChessBoard> {
               child: IgnorePointer(child: SvgPicture.asset('assets/pieces/${_pieces[dragging]}.svg')),
             ),
           ?badge,
+          ])),
+          for (var sq = 0; sq < 64; sq++) _semSquare(sq, s, lm),
         ]),
+        ),
       ),
     );
   }
@@ -214,9 +247,9 @@ class _SquaresPainter extends CustomPainter {
         final sq = r * 8 + f;
         canvas.drawRect(
           Rect.fromLTWH(x * s, y * s, s, s),
-          Paint()..color = sq == sel ? const Color(0xFFF6F669) : hl.contains(sq) ? const Color(0xFFE3C9A5) : lightSq ? _light : _dark,
+          Paint()..color = sq == sel ? kSelect : hl.contains(sq) ? kLastMove : lightSq ? kBoardLight : kBoardDark,
         );
-        final ink = lightSq ? _dark : _light;
+        final ink = lightSq ? kBoardDark : kBoardLight;
         if (x == 0) _text(canvas, '${r + 1}', Offset(x * s + 3, y * s + 2), s * 0.22, ink);
         if (y == 7) {
           final tp = _text(canvas, String.fromCharCode(97 + f), Offset.zero, s * 0.22, ink, paint: false);

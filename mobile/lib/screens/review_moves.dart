@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:dartchess/dartchess.dart' as dc;
 import 'package:material_ui/material_ui.dart' hide Badge;
@@ -55,6 +56,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
   String? _selected;
   Timer? _timer;
   final _curKey = GlobalKey();
+  bool? _wasWide;
 
   List<ReviewMove> get _moves => widget.report.moves;
   List<int> get _momentPlies => [for (final m in _moments.moments) m.ply];
@@ -120,6 +122,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
     // After a best move show what comes next from it; otherwise replay the better move from before it.
     final playedBest = m.bestUci == m.uci;
     final pv = playedBest ? m.bestPv.skip(1).toList() : m.bestPv;
+    final still = MediaQuery.disableAnimationsOf(context);
     final line = followUpLine(playedBest ? m.fen : _prevFen, pv);
     setState(() {
       _toGame();
@@ -128,8 +131,9 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
       _lineSans = line.sans;
       _lineUcis = pv.take(line.sans.length).toList();
       _lineIdx = 0;
-      _playing = true;
+      _playing = !still;
     });
+    if (still) return;
     _timer = Timer.periodic(const Duration(milliseconds: _lineStepMs), (t) {
       if (!mounted || !_playing || _lineIdx >= _lineSans.length)
         return t.cancel();
@@ -301,13 +305,21 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
           ),
         );
       }
+      final num = m.color == Side.white ? '$n.' : '$n…';
       if (m.color == Side.black) n++;
       final cur = i + 1 == _ply;
       items.add(
-        GestureDetector(
+        Semantics(
+          button: true,
+          selected: cur,
+          label: '$num ${m.san}, ${badgeMeta[m.badge]!.label}',
+          excludeSemantics: true,
+          child: InkWell(
           key: cur ? _curKey : null,
           onTap: () => _go(i + 1),
           child: Container(
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 48),
+            alignment: Alignment.center,
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: cur
@@ -327,12 +339,14 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
             ),
           ),
         ),
+        ),
       );
     }
     return Row(
       children: [
         IconButton(
           iconSize: 36,
+          tooltip: 'Previous move',
           onPressed: _ply > 0 ? () => _go(_ply - 1) : null,
           icon: const Icon(Icons.chevron_left),
         ),
@@ -344,6 +358,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
         ),
         IconButton(
           iconSize: 36,
+          tooltip: 'Next move',
           onPressed: _ply < _moves.length ? () => _go(_ply + 1) : null,
           icon: const Icon(Icons.chevron_right),
         ),
@@ -357,6 +372,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
       children: [
         IconButton(
           iconSize: 32,
+          tooltip: 'Previous move',
           onPressed: _lineIdx > 0 ? () => _lineStep(_lineIdx - 1) : null,
           icon: const Icon(Icons.chevron_left),
         ),
@@ -366,9 +382,16 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
             child: Row(
               children: [
                 for (var i = 0; i < labels.length; i++)
-                  GestureDetector(
+                  Semantics(
+                    button: true,
+                    selected: i + 1 == _lineIdx,
+                    label: labels[i],
+                    excludeSemantics: true,
+                    child: InkWell(
                     onTap: () => _lineStep(i + 1),
                     child: Container(
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 48),
+                      alignment: Alignment.center,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -376,7 +399,7 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: i + 1 == _lineIdx
-                            ? const Color(0xFF4B4844)
+                            ? kMoveCurrent
                             : null,
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -390,12 +413,14 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                       ),
                     ),
                   ),
+                  ),
               ],
             ),
           ),
         ),
         IconButton(
           iconSize: 32,
+          tooltip: 'Next move',
           onPressed: _lineIdx < _lineSans.length
               ? () => _lineStep(_lineIdx + 1)
               : null,
@@ -633,8 +658,12 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
       captured: s == Side.white ? captured.white : captured.black,
     );
     final eval = onGame ? (m ?? widget.report.start) : _prevEval;
-    final sound = prefs.soundOn;
-    return Scaffold(
+    return PopScope(
+      canPop: _mode != _Mode.retry && _mode != _Mode.line,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(_toGame);
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Review'),
         actions: [
@@ -642,14 +671,6 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
             tooltip: 'Flip board',
             onPressed: () => setState(() => _flipped = !_flipped),
             icon: const Icon(Icons.swap_vert),
-          ),
-          IconButton(
-            tooltip: sound ? 'Sound on' : 'Sound off',
-            onPressed: () => setState(() => prefs.soundOn = !sound),
-            icon: Icon(
-              sound ? Icons.volume_up : Icons.volume_off,
-              color: sound ? kGreen : null,
-            ),
           ),
           IconButton(
             tooltip: 'Summary',
@@ -665,80 +686,64 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
       ),
       body: _mode == _Mode.end
           ? _recap()
-          : Column(
-              children: [
-                // Fixed-height coach area (scrolls inside; shrinks on short screens) so the board never resizes.
-                Flexible(
-                  child: SizedBox(
-                    height: 170,
-                    // The bubble fills this fixed area and scrolls its own text: avatar, bubble and board never move.
-                    child: Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 10), child: card),
-                  ),
-                ),
-                LayoutBuilder(
-                  builder: (_, c) {
-                    final size = c.maxWidth - kEvalBarWidth - 16;
-                    return Center(
-                      child: GestureDetector(
-                        // Swipe the board to step through moves.
-                        onHorizontalDragEnd: retrying
-                            ? null
-                            : (d) => (d.primaryVelocity ?? 0).abs() > 300
-                                  ? _go(
-                                      _ply + (d.primaryVelocity! < 0 ? 1 : -1),
-                                    )
-                                  : null,
-                        child: Column(
+          : LayoutBuilder(
+              builder: (_, c) {
+                final wide = c.maxWidth > c.maxHeight;
+                // The strip's scroll position resets when the layout flips; bring the current move back.
+                if (wide != _wasWide) {
+                  _wasWide = wide;
+                  WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
+                }
+                // Wide: board fills the height minus the two 32dp player bars (+8 slack); tall tablets: cap so coach, strip and bar still fit.
+                final size = wide
+                    ? math.max(100.0, math.min(c.maxHeight - 72, c.maxWidth * 0.55 - kEvalBarWidth))
+                    : math.min(c.maxWidth - kEvalBarWidth - 16, c.maxHeight * 0.55);
+                final coach = Semantics(liveRegion: true, child: card);
+                final board = RepaintBoundary(
+                  child: GestureDetector(
+                    // Swipe the board to step through moves.
+                    onHorizontalDragEnd: retrying
+                        ? null
+                        : (d) => (d.primaryVelocity ?? 0).abs() > 300
+                              ? _go(_ply + (d.primaryVelocity! < 0 ? 1 : -1))
+                              : null,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(width: size + kEvalBarWidth, child: bar(top)),
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SizedBox(width: size + kEvalBarWidth, child: bar(top)),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                EvalBar(
-                                  ev: eval,
-                                  height: size,
-                                  flipped: _flipped,
-                                ),
-                                ChessBoard(
-                                  fen: fen,
-                                  size: size,
-                                  flipped: _flipped,
-                                  lastMove: _mode == _Mode.line
-                                      ? (_lineIdx > 0
-                                            ? _lineUcis[_lineIdx - 1]
-                                            : null)
-                                      : retrying
-                                      ? (solvedNow
-                                            ? _fb!.uci
-                                            : (_ply > 1
-                                                  ? _moves[_ply - 2].uci
-                                                  : null))
-                                      : m?.uci,
-                                  badge: onGame
-                                      ? m?.badge
-                                      : solvedNow
-                                      ? Badge.best
-                                      : null,
-                                  arrows: showBest ? [m.bestUci!] : [?hintBest],
-                                  selected: _selected,
-                                  onTap: retrying && !solvedNow
-                                      ? _tapSquare
-                                      : null,
-                                  onMove: retrying && !solvedNow
-                                      ? _tryMove
-                                      : null,
-                                ),
-                              ],
+                            EvalBar(ev: eval, height: size, flipped: _flipped),
+                            ChessBoard(
+                              fen: fen,
+                              size: size,
+                              flipped: _flipped,
+                              lastMove: _mode == _Mode.line
+                                  ? (_lineIdx > 0 ? _lineUcis[_lineIdx - 1] : null)
+                                  : retrying
+                                  ? (solvedNow
+                                        ? _fb!.uci
+                                        : (_ply > 1 ? _moves[_ply - 2].uci : null))
+                                  : m?.uci,
+                              badge: onGame
+                                  ? m?.badge
+                                  : solvedNow
+                                  ? Badge.best
+                                  : null,
+                              arrows: showBest ? [m.bestUci!] : [?hintBest],
+                              selected: _selected,
+                              onTap: retrying && !solvedNow ? _tapSquare : null,
+                              onMove: retrying && !solvedNow ? _tryMove : null,
                             ),
-                            SizedBox(width: size + kEvalBarWidth, child: bar(bottom)),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                ),
-                SafeArea(
+                        SizedBox(width: size + kEvalBarWidth, child: bar(bottom)),
+                      ],
+                    ),
+                  ),
+                );
+                final controls = SafeArea(
                   top: false,
                   child: Column(
                     children: [
@@ -762,9 +767,42 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+                final pad = const EdgeInsets.fromLTRB(16, 8, 16, 10);
+                if (wide) {
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: size + kEvalBarWidth,
+                        child: Center(child: board),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Expanded(child: Padding(padding: pad, child: coach)),
+                            controls,
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return Column(
+                  children: [
+                    // Fixed-height coach area (scrolls inside; shrinks on short screens) so the board never resizes.
+                    Flexible(
+                      child: SizedBox(
+                        height: 170,
+                        child: Padding(padding: pad, child: coach),
+                      ),
+                    ),
+                    Center(child: board),
+                    controls,
+                  ],
+                );
+              },
             ),
+    ),
     );
   }
 }

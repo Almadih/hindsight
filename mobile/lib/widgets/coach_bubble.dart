@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart' hide Badge;
 
 import '../models.dart';
 import '../review_logic.dart';
+import '../theme.dart';
 import 'badge_icon.dart';
 
 /// Coach avatar + white speech bubble; with [badge] the bubble opens with a header row (icon, [title], eval chip).
@@ -17,7 +18,7 @@ class CoachBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const ink = Color(0xFF2B2927);
+    const ink = kInk;
     final body = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min, children: [
       if (badge != null)
         Padding(

@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models.dart';
+import '../theme.dart';
 
 /// Name, rating and captured pieces with the material lead (port of PlayerBar.tsx).
 class PlayerBar extends StatelessWidget {
@@ -23,13 +24,13 @@ class PlayerBar extends StatelessWidget {
           width: 16,
           height: 16,
           decoration: BoxDecoration(
-            color: side == Side.white ? const Color(0xFFF1EFEA) : const Color(0xFF403D39),
+            color: side == Side.white ? kEvalWhite : kTrack,
             borderRadius: BorderRadius.circular(3),
             border: side == Side.black ? Border.all(color: Colors.white24) : null,
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700))),
+        Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)))),
         if (you) const Text(' (you)', style: TextStyle(color: Colors.white60)),
         if (rating != null) Text(' ($rating)', style: const TextStyle(color: Colors.white60)),
         const Spacer(),
