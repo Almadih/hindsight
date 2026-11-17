@@ -149,8 +149,8 @@ class ReviewSummaryScreen extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          // Like the web, start at the first key moment when there is one.
-          child: GreenButton('Start Review', onPressed: () => _open(context, moments.firstOrNull?.ply ?? 0)),
+          // Like Chess.com, the review starts from the first move; the key-moment rows above jump straight to a moment.
+          child: GreenButton('Start Review', onPressed: () => _open(context, 0)),
         ),
       ]),
     );

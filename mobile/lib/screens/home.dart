@@ -206,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: const Icon(Icons.play_circle_outline, color: kGreen),
                   title: const Text('Try a demo review'),
                   subtitle: const Text('Morphy\'s Opera Game, Paris 1858'),
-                  onTap: () => _analyze(demoPgn),
+                  onTap: () => openDemo(context),
                 ),
               ),
               _h2('Ten verdicts, one scale'),

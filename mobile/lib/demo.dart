@@ -1,9 +1,21 @@
-// The web's demo game (Morphy's Opera Game, Paris 1858); reviewing it usually hits the shared cache.
-const demoPgn = '''[Event "Paris"]
-[Site "Paris FRA"]
-[Date "1858.??.??"]
-[White "Paul Morphy"]
-[Black "Duke Karl / Count Isouard"]
-[Result "1-0"]
+import 'dart:convert';
 
-1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8# 1-0''';
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'models.dart';
+import 'screens/review_summary.dart';
+
+/// The demo (Morphy's Opera Game, Paris 1858) ships pre-analyzed, so it opens instantly and offline.
+/// The bundled report is also stored in the shared cache (hash 489b29f2…), so its share link works.
+/// Regenerate after an API ANALYSIS_VERSION bump: analyze the game once and save `/api/review/{hash}` here.
+const demoReportAsset = 'assets/demo/report.json';
+const _startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+Future<Report> loadDemoReport() async => Report.fromJson(jsonDecode(await rootBundle.loadString(demoReportAsset)));
+
+Future<void> openDemo(BuildContext context) async {
+  final report = await loadDemoReport();
+  if (!context.mounted) return;
+  await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReviewSummaryScreen(report: report, startFen: _startFen)));
+}
