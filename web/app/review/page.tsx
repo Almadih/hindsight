@@ -18,8 +18,8 @@ type State =
 
 export default function ReviewPage() {
   const [state, setState] = useState<State>({ stage: "lookup" });
-  // True after the user asks to re-check a shared review with their own engine.
-  const [fresh, setFresh] = useState(false);
+  // True after the user asks to re-check a shared review with their own engine; runId forces re-runs on repeat clicks.
+  const [{ fresh, runId }, setRun] = useState({ fresh: false, runId: 0 });
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -62,7 +62,7 @@ export default function ReviewPage() {
       }
     })();
     return () => ctrl.abort();
-  }, [fresh]);
+  }, [fresh, runId]);
 
   // Put the stored review's address in the URL so refresh, bookmarks and sharing all work.
   const linkHash = state.stage === "done" && state.linkable ? state.report.hash : null;
@@ -85,7 +85,7 @@ export default function ReviewPage() {
         initialPly={Number(new URLSearchParams(location.search).get("ply")) || undefined}
         onReanalyze={() => {
           setState({ stage: "lookup" });
-          setFresh(true);
+          setRun((r) => ({ fresh: true, runId: r.runId + 1 }));
         }}
       />
     );

@@ -1,5 +1,3 @@
-import type { Badge } from "./types";
-
 // Chess move sounds from Chess.com. Played only after the visitor turns sound on.
 type Sound = "move" | "capture" | "castle" | "check" | "promote";
 
@@ -51,6 +49,6 @@ function moveSound(san: string): Sound {
 }
 
 /** The sound for one move: plays the matching Chess.com piece movement sound. */
-export function playMove(move: { san: string; badge?: Badge | null }) {
+export function playMove(move: { san: string }) {
   play(moveSound(move.san));
 }

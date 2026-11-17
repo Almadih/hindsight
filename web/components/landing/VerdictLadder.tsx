@@ -7,13 +7,13 @@ import { BadgeIcon } from "../BadgeIcon";
 const SCALE: { badge: Badge; lost: string }[] = [
   { badge: "brilliant", lost: "0%" },
   { badge: "great", lost: "0%" },
-  { badge: "best", lost: "under 1%" },
-  { badge: "excellent", lost: "1–3%" },
-  { badge: "good", lost: "3–5%" },
-  { badge: "inaccuracy", lost: "5–10%" },
-  { badge: "mistake", lost: "10–20%" },
+  { badge: "best", lost: "0%" },
+  { badge: "excellent", lost: "under 3%" },
+  { badge: "good", lost: "3–6%" },
+  { badge: "inaccuracy", lost: "6–14%" },
+  { badge: "mistake", lost: "14–28%" },
   { badge: "miss", lost: "10%+" },
-  { badge: "blunder", lost: "20%+" },
+  { badge: "blunder", lost: "28%+" },
 ];
 
 /** Every verdict as one ladder, from keeping all your chances to throwing them away; Book sits off the scale. */

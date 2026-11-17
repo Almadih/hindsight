@@ -13,7 +13,8 @@ export function parseInfo(line: string): InfoLine | null {
     const i = t.indexOf(key);
     return i < 0 ? undefined : Number(t[i + 1]);
   };
-  const pv = t.slice(pvAt + 1);
+  const pv = t.slice(pvAt + 1).filter(Boolean);
+  if (!pv.length) return null;
   const value = Number(t[scoreAt + 2]);
   return {
     multipv: after("multipv") ?? 1,

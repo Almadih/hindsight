@@ -133,7 +133,7 @@ class PlayerGame {
       : hash = j['hash'],
         side = j['side'],
         opponent = j['opponent'],
-        date = '${j['date'] ?? ''}'.split('T').first,
+        date = '${j['date'] ?? ''}'.split(RegExp(r'[T ]')).first,
         result = j['result'],
         accuracy = _d(j['accuracy']),
         estElo = _i(j['estElo']);

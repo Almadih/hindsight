@@ -36,4 +36,11 @@ void main() {
     api.client = MockClient((_) async => http.Response('{"detail":"no review"}', 404));
     expect(await api.cachedReview('x'), isNull);
   });
+
+  test('PlayerGame trims both space and T timestamps to date', () {
+    final a = PlayerGame.fromJson({'hash': 'h', 'side': 'white', 'opponent': 'Bob', 'date': '2026-10-15 10:00:00', 'result': 'won'});
+    final b = PlayerGame.fromJson({'hash': 'h', 'side': 'white', 'opponent': 'Bob', 'date': '2026-10-15T10:00:00Z', 'result': 'won'});
+    expect(a.date, '2026-10-15');
+    expect(b.date, '2026-10-15');
+  });
 }

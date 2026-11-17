@@ -23,7 +23,7 @@ PHASES = ("opening", "middlegame", "endgame")
 
 class Line(BaseModel):
     uci: str | None = Field(None, max_length=5)
-    cp: int | None = None
+    cp: int | None = Field(None, ge=-100_000, le=100_000)
     mate: int | None = None
     pv: list[str] = Field(default_factory=list, max_length=40)
 

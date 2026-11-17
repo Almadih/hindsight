@@ -4,7 +4,7 @@ import asyncio
 import pathlib
 import sqlite3
 
-from review.store import DAY, PER_DAY, PER_MINUTE, allow_analysis, player_reviews, stored_accuracies
+from review.store import DAY, PER_DAY, PER_MINUTE, allow_analysis, get_review, player_reviews, put_review, reviews_last_day, stored_accuracies
 
 
 class FakeD1:
@@ -25,6 +25,12 @@ class FakeD1:
             async def run(self):
                 cur = db.conn.execute(sql, self.args)
                 return {"meta": {"changes": cur.rowcount}}
+
+            async def first(self):
+                cur = db.conn.execute(sql, self.args)
+                cols = [c[0] for c in cur.description]
+                row = cur.fetchone()
+                return dict(zip(cols, row)) if row else None
 
             async def all(self):
                 cur = db.conn.execute(sql, self.args)
@@ -83,3 +89,22 @@ def test_stored_accuracies_only_known_hashes():
     add_review(db, "a", "w", "b", "2026-10-01 10:00:00", 88.5, 71.0)
     assert asyncio.run(stored_accuracies(db, ["a", "missing"])) == {"a": {"white": 88.5, "black": 71.0}}
     assert asyncio.run(stored_accuracies(db, [])) == {}
+
+
+def test_put_get_review_and_reviews_last_day():
+    db = FakeD1()
+    assert asyncio.run(get_review(db, "h1")) is None
+    assert asyncio.run(reviews_last_day(db)) == 0
+    report = {
+        "hash": "h1",
+        "headers": {"Site": "https://lichess.org/abc", "White": "Alice", "Black": "Bob", "WhiteElo": "1500", "BlackElo": "?"},
+        "accuracy": {"white": 91.2, "black": 84.0},
+        "elo": {"white": 1600, "black": 1400},
+        "moves": [],
+    }
+    asyncio.run(put_review(db, report, "1. e4 e5 *"))
+    # First writer wins: a duplicate write with different data does not overwrite.
+    asyncio.run(put_review(db, {**report, "accuracy": {"white": 10.0, "black": 10.0}}, "1. d4 *"))
+    got = asyncio.run(get_review(db, "h1"))
+    assert got is not None and got["accuracy"]["white"] == 91.2
+    assert asyncio.run(reviews_last_day(db)) == 1

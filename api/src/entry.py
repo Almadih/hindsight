@@ -62,9 +62,15 @@ async def player(platform: Literal["chesscom", "lichess"], username: str = USERN
     me = username.lower()
     for g in recent:
         acc = stored.get(g.get("hash"))
-        side = "white" if g["white"]["name"].lower() == me else "black"
-        g["reviewed"] = {"accuracy": acc[side]} if acc else None
-    return {"username": username, "platform": platform, "games": recent, **summarize(await player_reviews(env.DB, username), username)}
+        side = "white" if g["white"]["name"].lower() == me else "black" if g["black"]["name"].lower() == me else None
+        g["reviewed"] = {"accuracy": acc[side]} if acc and side else None
+    summary_key = f"player_summary:{me}"
+    if cached_summary := await env.CACHE.get(summary_key):
+        summary = json.loads(cached_summary)
+    else:
+        summary = summarize(await player_reviews(env.DB, username), username)
+        await env.CACHE.put(summary_key, json.dumps(summary), {"expirationTtl": GAMES_TTL})
+    return {"username": username, "platform": platform, "games": recent, **summary}
 
 
 @app.get("/api/review/{game_hash}")
@@ -98,6 +104,9 @@ async def analyze_game(req: AnalyzeRequest, request: Request, env=env):
     use_ai = await reviews_last_day(env.DB) < AI_DAILY_CAP
     await add_coach(report, (lambda model, inputs: env.AI.run(model, inputs)) if use_ai else None)
     await put_review(env.DB, report, req.pgn)
+    for side_key in ("White", "Black"):
+        if name := report["headers"].get(side_key):
+            await env.CACHE.delete(f"player_summary:{name.lower()}")
     return report
 
 

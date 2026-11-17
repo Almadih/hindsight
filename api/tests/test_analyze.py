@@ -2,8 +2,9 @@ import io
 
 import chess.pgn
 import pytest
+from pydantic import ValidationError
 
-from review.analyze import AnalysisError, PositionEval, analyze, parse_game
+from review.analyze import AnalysisError, Line, PositionEval, analyze, parse_game
 
 OPERA = """[Event "Paris"]
 [White "Paul Morphy"]
@@ -89,3 +90,10 @@ def test_report_has_alternatives_tactics_and_elo():
     assert any("offers material" in f for f in next(m for m in report["moves"] if m["san"] == "Nxb5")["tactics"])
     assert set(report["elo"]) == {"white", "black"}
     assert len(report["hash"]) == 64
+
+
+def test_extreme_cp_rejected():
+    with pytest.raises(ValidationError):
+        Line(uci="e2e4", cp=-200_000, pv=["e2e4"])
+    with pytest.raises(ValidationError):
+        Line(uci="e2e4", cp=200_000, pv=["e2e4"])

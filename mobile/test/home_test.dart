@@ -6,9 +6,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('home renders the verdict ladder and FAQ', (tester) async {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
     await initPrefs();
+  });
+
+  testWidgets('home renders the verdict ladder and FAQ', (tester) async {
     tester.view.physicalSize = const Size(1080, 6000);
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
@@ -30,5 +33,13 @@ void main() {
     await tester.pump();
     expect(tester.widget<SegmentedButton<String>>(find.byType(SegmentedButton<String>)).selected, {'lichess'});
     sem.dispose();
+  });
+
+  testWidgets('invalid username shows format message without calling API', (tester) async {
+    await tester.pumpWidget(MaterialApp(theme: appTheme(), home: const HomeScreen()));
+    await tester.enterText(find.byType(TextField), 'bad user!');
+    await tester.tap(find.text('Find games'));
+    await tester.pump();
+    expect(find.text('Use 1–30 letters, numbers, - or _ only.'), findsOneWidget);
   });
 }

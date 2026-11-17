@@ -22,8 +22,8 @@ const _faq = [
 ];
 
 const _scale = [
-  (Badge.brilliant, '0%'), (Badge.great, '0%'), (Badge.best, 'under 1%'), (Badge.excellent, '1–3%'), (Badge.good, '3–5%'),
-  (Badge.inaccuracy, '5–10%'), (Badge.mistake, '10–20%'), (Badge.miss, '10%+'), (Badge.blunder, '20%+'),
+  (Badge.brilliant, '0%'), (Badge.great, '0%'), (Badge.best, '0%'), (Badge.excellent, 'under 3%'), (Badge.good, '3–6%'),
+  (Badge.inaccuracy, '6–14%'), (Badge.mistake, '14–28%'), (Badge.miss, '10%+'), (Badge.blunder, '28%+'),
 ];
 
 /// Every verdict from keeping all your chances to throwing them away; Book sits off the scale (port of VerdictLadder.tsx).
@@ -83,6 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final u = _name.text.trim();
     if (u.isEmpty) return;
     FocusScope.of(context).unfocus();
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,30}$').hasMatch(u)) {
+      setState(() {
+        _error = ApiError('Use 1–30 letters, numbers, - or _ only', 422);
+        _games = null;
+      });
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
