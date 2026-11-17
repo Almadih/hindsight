@@ -115,6 +115,20 @@ dc.Position? positionOf(String fen) {
   }
 }
 
+/// Shown in place of the badge's wording when the mover had exactly one legal move.
+const forcedPhrase = 'is the only legal move';
+const forcedRule = 'Forced: there was no other move to play.';
+
+bool isForced(String fenBefore) {
+  final pos = positionOf(fenBefore);
+  if (pos == null) return false;
+  final moves = pos.legalMoves.entries.where((e) => e.value.isNotEmpty).toList();
+  if (moves.length != 1 || moves.single.value.size != 1) return false;
+  // A lone pawn move to the last rank still leaves a choice of promotion piece.
+  final to = moves.single.value.first!;
+  return !(pos.board.roleAt(moves.single.key) == dc.Role.pawn && dc.SquareSet.backranks.has(to));
+}
+
 String? uciToSan(String fen, String uci) {
   final pos = positionOf(fen);
   return pos == null ? null : playUci(pos, uci)?.$2;

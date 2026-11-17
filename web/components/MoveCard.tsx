@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import { BADGE, badgeText, canRetry, describeEval, formatEval, personalize, uciToSan } from "@/lib/review";
+import { BADGE, badgeText, canRetry, describeEval, FORCED, formatEval, isForced, personalize, uciToSan } from "@/lib/review";
 import type { ReviewMove } from "@/lib/types";
 import { BadgeIcon } from "./BadgeIcon";
 
@@ -130,7 +130,9 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, solved, you
   // After a best move the line continues from it ("what comes next"); otherwise it replays the better move.
   const playedBest = move.bestUci === move.uci;
   const hasLine = move.mateWhite !== 0 && move.bestPv.length > (playedBest ? 1 : 0);
-  const sub = hidden ? BADGE[move.badge].rule : best ? `Best was ${best}` : move.badge === "book" && opening ? opening : BADGE[move.badge].rule;
+  const forced = move.badge !== "book" && isForced(fenBefore);
+  const phrase = forced ? FORCED.phrase : BADGE[move.badge].phrase;
+  const sub = hidden ? BADGE[move.badge].rule : best ? `Best was ${best}` : forced ? FORCED.rule : move.badge === "book" && opening ? opening : BADGE[move.badge].rule;
   return (
     // Polite live region: stepping with the arrows or N/P reads out the new move and verdict.
     <div className="space-y-2 rounded-md bg-raised px-3 py-2.5" aria-live="polite">
@@ -138,7 +140,7 @@ export function MoveCard({ move, fenBefore, opening, mode, revealed, solved, you
         <BadgeIcon badge={move.badge} size={28} className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="font-semibold" style={{ color: badgeText(move.badge) }}>
-            {move.san} {BADGE[move.badge].phrase}
+            {move.san} {phrase}
           </p>
           <p className="text-sm text-muted">
             {moment && (

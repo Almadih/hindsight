@@ -108,6 +108,17 @@ export function materialDiff(fen: string): number {
   return diff;
 }
 
+/** Shown in place of the badge's wording when the mover had exactly one legal move. */
+export const FORCED = { phrase: "is the only legal move", rule: "Forced: there was no other move to play." };
+
+export function isForced(fenBefore: string): boolean {
+  try {
+    return new Chess(fenBefore).moves().length === 1;
+  } catch {
+    return false;
+  }
+}
+
 export function uciToSan(fen: string, uci: string): string | null {
   try {
     return new Chess(fen).move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] }).san;
