@@ -8,6 +8,7 @@ const PATHS = {
   soundOn: "M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13",
   link: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
   soundOff: "M11 5 6 9H3v6h3l5 4zM16 9.5l5 5M21 9.5l-5 5",
+  download: "M12 3v12M7 10l5 5 5-5M5 21h14",
 };
 
 export function Icon({ name, size = 20 }: { name: keyof typeof PATHS; size?: number }) {

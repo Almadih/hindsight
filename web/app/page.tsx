@@ -31,6 +31,8 @@ const STILL_PLY = DEMO.moves.findIndex((m) => m.san === "Qb8+") + 1;
 const TURNING = keyMoments(DEMO.moves.filter((m) => m.coach), 3);
 
 const SITE = "https://hindsight.almadih.dev";
+const APK_URL = "https://github.com/Almadih/hindsight/releases/latest/download/hindsight.apk";
+const RELEASES_URL = "https://github.com/Almadih/hindsight/releases/latest";
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
   "@graph": [
@@ -130,10 +132,13 @@ export default function Home() {
             <img src="/brand/mark.svg" alt="" width={27} height={28} className="self-center" />
             Hindsight
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
             <Link href="/how-it-works" className="text-sm text-muted hover:text-fg">
               How it works
             </Link>
+            <a href={APK_URL} className="text-sm text-muted hover:text-fg">
+              Android app
+            </a>
             <p className="hidden text-sm text-muted sm:block">Free · No account · Chess.com & Lichess</p>
             <button
               onClick={toggleSound}
@@ -243,6 +248,31 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="mobile" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+        <div className="flex flex-col items-start justify-between gap-8 rounded-2xl border border-line bg-surface p-8 sm:p-12 lg:flex-row lg:items-center">
+          <div>
+            <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">
+              Also on Android
+            </h2>
+            <p className="mt-4 max-w-[52ch] text-lg text-pretty text-muted">
+              Review games on your phone with Stockfish 19, move verdicts, coach notes and retry mode. Free, no account, and opens shared Hindsight links straight in the app.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-start gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-end">
+            <a
+              href={APK_URL}
+              className="inline-flex items-center gap-2.5 rounded-lg bg-accent px-6 py-3.5 text-base font-bold text-[#141311] hover:brightness-110"
+            >
+              <Icon name="download" size={18} />
+              Download Android APK
+            </a>
+            <a href={RELEASES_URL} className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-fg">
+              Latest release on GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
         <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Questions</h2>
         <div className="mt-8 grid max-w-[60ch] gap-6">
@@ -252,6 +282,16 @@ export default function Home() {
               <p className="mt-2 text-pretty text-muted">{a}</p>
             </div>
           ))}
+          <div>
+            <h3 className="text-xl font-bold">Is there a mobile app?</h3>
+            <p className="mt-2 text-pretty text-muted">
+              Yes, for Android.{" "}
+              <a href={APK_URL} className="underline decoration-line underline-offset-4 hover:text-fg">
+                Download the latest APK
+              </a>{" "}
+              directly from GitHub.
+            </p>
+          </div>
           <div>
             <h3 className="text-xl font-bold">How is accuracy calculated?</h3>
             <p className="mt-2 text-pretty text-muted">
@@ -279,6 +319,9 @@ export default function Home() {
           <Link href="/how-it-works" className="hover:text-fg">
             How it works
           </Link>
+          <a href={APK_URL} className="hover:text-fg">
+            Android APK
+          </a>
           <a href="https://github.com/Almadih/hindsight" className="hover:text-fg">
             GitHub
           </a>
