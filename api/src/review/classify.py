@@ -18,9 +18,9 @@ class MoveFacts:
     in_book: bool
     sacrifice: bool
     opp_win_lost: float | None  # opponent's win% lost on the previous ply
-    had_mate: bool  # mover had a forced mate before the move
-    has_mate: bool  # mover still has a forced mate after the move
-    into_mate: bool  # opponent has a forced mate after the move
+    had_mate: bool  # mover had a forced mate a human could see (<= HUMAN_MATE moves) before the move
+    has_mate: bool  # mover still has a forced mate (any length) after the move
+    into_mate: bool  # opponent has a forced mate a human could see (<= HUMAN_MATE moves) after the move
     was_mated: bool  # mover was already being mated before the move
     is_recapture: bool = False  # direct recapture on the square the opponent just moved to / captured on
     was_in_check: bool = False  # mover was in check before this move
@@ -37,6 +37,7 @@ def classify(f: MoveFacts) -> str:
     if f.in_book:
         return "book"
     dw = f.win_lost
+    # Longer mates aren't special here: their win% already says the position is lost (or won).
     if f.into_mate and not f.was_mated and f.w_before >= 15.0:
         return "blunder"
 

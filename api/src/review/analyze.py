@@ -13,11 +13,11 @@ from .classify import MoveFacts, classify, is_sacrifice
 from .elo import estimate
 from .openings import opening_name
 from .tactics import describe, parse_move
-from .winprob import MATE_CP, game_accuracy, move_accuracy, score_to_cp, win_pct
+from .winprob import HUMAN_MATE, MATE_CP, game_accuracy, move_accuracy, perceived_cp, score_to_cp, win_pct
 
 MAX_PLIES = 600
 # Part of every game hash: bump it whenever classification output changes so stale cached reviews are never served.
-ANALYSIS_VERSION = "5"
+ANALYSIS_VERSION = "6"
 PHASES = ("opening", "middlegame", "endgame")
 
 
@@ -183,26 +183,31 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
         name = opening_name(board)
         opening = name or opening
 
-        best_cp = score_to_cp(cp_before, mate_before)
-        after_cp = -score_to_cp(cp_after, mate_after)
-        cp_loss = max(0, best_cp - after_cp)
+        # Badges judge the position as a player sees it: mates past HUMAN_MATE count as a decisive edge.
+        felt_before = perceived_cp(cp_before, mate_before)
+        felt_after = perceived_cp(cp_after, mate_after)  # opponent's perspective
+        after_is_mate = board.is_checkmate() or mate_after is not None
+        if mate_before is not None and after_is_mate:
+            cp_loss = max(0, score_to_cp(cp_before, mate_before) + score_to_cp(cp_after, mate_after))  # mate to mate: compare distances
+        else:
+            cp_loss = max(0, felt_before + felt_after)
         after_mate = 0 if board.is_checkmate() else (-mate_after if mate_after is not None else None)
 
         facts = MoveFacts(
-            w_before=win_pct(cp_before),
-            w_after=100 - win_pct(cp_after),
+            w_before=win_pct(felt_before),
+            w_after=100 - win_pct(felt_after),
             played_best=played_best,
             pv_gap=(
-                win_pct(score_to_cp(lines[0].cp, lines[0].mate)) - win_pct(score_to_cp(lines[1].cp, lines[1].mate))
+                win_pct(perceived_cp(lines[0].cp, lines[0].mate)) - win_pct(perceived_cp(lines[1].cp, lines[1].mate))
                 if len(lines) >= 2
                 else None
             ),
             in_book=name is not None,
             sacrifice=sacrifice,
             opp_win_lost=prev_win_lost,
-            had_mate=mate_before is not None and mate_before > 0,
+            had_mate=mate_before is not None and 0 < mate_before <= HUMAN_MATE,
             has_mate=board.is_checkmate() or (mate_after is not None and mate_after < 0),
-            into_mate=mate_after is not None and mate_after > 0,
+            into_mate=mate_after is not None and 0 < mate_after <= HUMAN_MATE,
             was_mated=mate_before is not None and mate_before < 0,
             is_recapture=is_recap,
             was_in_check=was_in_check,
