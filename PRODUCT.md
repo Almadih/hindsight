@@ -28,7 +28,7 @@ Free and account-free, for both Chess.com and Lichess games, with the review for
 ## Capabilities and Constraints
 
 - Live at https://chess-review.almadih.workers.dev (Cloudflare Workers: Python API + static Next.js export).
-- Per-IP limits on new analyses (5/minute, 30/day) and a daily ceiling on AI coach calls; past the ceiling, coach comments fall back to deterministic tactical facts.
+- Per-IP limits on new analyses (5/minute, 60/day) and a daily ceiling on AI coach calls; past the ceiling, coach comments fall back to deterministic tactical facts.
 - Only standard chess (no variants).
 - Board pieces: Staunty set by sadsnake1, CC BY-NC-SA 4.0 — requires attribution and keeps the product non-commercial while it is used.
 - Chess.com's own piece art and annotation icons must not be copied; our annotation icons are original drawings in a familiar visual language.

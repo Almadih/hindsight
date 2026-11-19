@@ -3,7 +3,7 @@
 import json
 
 PER_MINUTE = 5
-PER_DAY = 30
+PER_DAY = 60
 DAY = 86_400
 
 
