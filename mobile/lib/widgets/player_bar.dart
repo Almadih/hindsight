@@ -30,10 +30,14 @@ class PlayerBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)))),
-        if (you) const Text(' (you)', style: TextStyle(color: kMuted)),
-        if (rating != null) Text(' ($rating)', style: const TextStyle(color: kMuted)),
-        const Spacer(),
+        // The name gets all the room the captured pieces leave, at full size; only when that runs out is it cut.
+        Expanded(
+          child: Row(children: [
+            Flexible(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false, style: const TextStyle(fontWeight: FontWeight.w700))),
+            if (you) const Text(' (you)', style: TextStyle(color: kMuted)),
+            if (rating != null) Text(' ($rating)', style: const TextStyle(color: kMuted)),
+          ]),
+        ),
         for (var i = 0; i < captured.length; i++)
           Padding(
             // Same-type pieces overlap like a stack.
