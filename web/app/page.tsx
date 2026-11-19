@@ -53,7 +53,7 @@ const JSON_LD = JSON.stringify({
 }).replace(/</g, "\\u003c");
 
 const FAQ = [
-  ["Is it really free?", "Yes. Unlimited reviews, no account, no daily cap."],
+  ["Is it really free?", "Yes, with no account. You get up to 60 new reviews a day, and opening a game someone already reviewed doesn't count."],
   ["How do I review a Chess.com game?", "Pick Chess.com, type your username and choose a game."],
   ["Does it work with Lichess?", "Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines."],
   ["Which engine does it use?", "Stockfish 19, run in your browser at depth 16 by default."],
@@ -156,7 +156,7 @@ export default function Home() {
           <p className="mt-5 max-w-[34ch] text-lg text-pretty text-muted">
             See where your game turned: every move rated, mistakes explained, the better move on the board.
           </p>
-          <p className="mt-3 max-w-[40ch] text-sm text-muted">Free chess game review for Chess.com &amp; Lichess. Unlimited, powered by Stockfish.</p>
+          <p className="mt-3 max-w-[40ch] text-sm text-muted">Free chess game review for Chess.com &amp; Lichess. 60 reviews a day, powered by Stockfish.</p>
         </div>
 
         <div

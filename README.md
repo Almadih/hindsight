@@ -6,7 +6,7 @@
 
 Free chess game review: paste a PGN or enter a Chess.com / Lichess username, and every move gets a verdict
 (Brilliant … Blunder), with accuracy, a single-game rating estimate, coach notes, the engine's follow-up line
-and a retry mode. No account, no daily limit.
+and a retry mode. No account, up to 60 new reviews a day.
 
 Stockfish runs in the browser; a Cloudflare Python Worker classifies moves, stores shared reviews in D1,
 caches game lists in KV and writes coach notes with Workers AI.

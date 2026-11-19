@@ -15,7 +15,7 @@ import 'how_it_works.dart';
 import 'player.dart';
 
 const _faq = [
-  ['Is it really free?', 'Yes. Unlimited reviews, no account, no daily cap.'],
+  ['Is it really free?', 'Yes, with no account. You get up to 60 new reviews a day, and opening a game someone already reviewed doesn’t count.'],
   ['How do I review a Chess.com game?', 'Pick Chess.com, type your username and choose a game.'],
   ['Does it work with Lichess?', 'Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines.'],
   ['Which engine does it use?', 'Stockfish 19, at depth 16 by default (quick 14, deep 18).'],
@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const Text('See where your game turned: every move rated, mistakes explained, the better move on the board.',
                   style: TextStyle(fontSize: 16, color: Colors.white70)),
               const SizedBox(height: 4),
-              const Text('Free chess game review for Chess.com & Lichess. Unlimited, powered by Stockfish.',
+              const Text('Free chess game review for Chess.com & Lichess. 60 reviews a day, powered by Stockfish.',
                   style: TextStyle(fontSize: 13, color: Colors.white60)),
               const SizedBox(height: 16),
               // Above the finder so a loaded game list never pushes it out of view.
