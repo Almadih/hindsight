@@ -150,7 +150,7 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
         san = board.san(move)
         sacrifice = is_sacrifice(board, move)
         mate_before = _best_mate(board, ev_before)
-        before = board.copy(stack=False)
+        before = board.copy(stack=1)  # describe() checks the last move for missed recaptures
         lines = ev_before.lines
         alternatives = [
             {"uci": line.uci, "san": board.san(chess.Move.from_uci(line.uci)), "w": _round(win_pct(score_to_cp(line.cp, line.mate)))}

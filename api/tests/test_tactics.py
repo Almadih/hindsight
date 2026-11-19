@@ -61,3 +61,51 @@ def test_good_move_facts_include_what_it_leads_to():
     facts = describe(b, b.parse_san("Qb8+"), "brilliant", "b3b8", "d7b8", 2, -1)
     assert "it forces mate in 1" in facts
     assert "the best answer is Nxb8" in facts
+
+
+def test_blunder_that_skips_a_recapture_says_so():
+    # Real game: 13...Rxd1 took a knight; 14. Bf4?? doesn't take back (Stockfish: Rxd1 +5.4, then 14...Bxf2+ 15. Kh1 Rxa1).
+    b = board(
+        "d4 d5 c4 dxc4 e4 Nf6 Nc3 Nc6 Nf3 Nxd4 Nxd4 e5 Nf3 Qxd1+ Nxd1 Nxe4 Bxc4 Bc5 O-O Be6 Bxe6 fxe6 Nxe5 O-O-O Nf7 Rxd1"
+    )
+    facts = describe(b, b.parse_san("Bf4"), "blunder", "f1d1", "c5f2", None, None)
+    # Bxf2+ really wins the pawn: Kxf2 is covered by Ne4 and the f1 rook is pinned.
+    # The a1 rook is not "hanging": ...Rxa1 Rxa1 is only a trade.
+    assert facts == ["Bf4 misses the recapture Rxd1", "it allows Bxf2+, winning the pawn"]
+
+
+def test_capture_that_can_be_taken_back_is_not_called_winning():
+    # After 1. Ke2?? Nxc3+ 2. bxc3 it's a knight trade, not a knight won.
+    b = board("4k3/8/8/3n4/8/2N5/1P6/4K3 w - - 0 1")
+    assert describe(b, b.parse_san("Ke2"), "blunder", None, "d5c3", None, None) == []
+
+
+def test_quiet_move_on_the_square_is_not_a_missed_recapture():
+    # Real game: 10...g6 was a pawn move, so Bxg6 isn't a recapture.
+    b = board("d4 d5 Bf4 Nc6 e3 a6 Nf3 Nf6 Bd3 h6 h3 e6 O-O Bd6 Ne5 Bxe5 dxe5 Nd7 Qh5 g6")
+    facts = describe(b, b.parse_san("Qe2"), "miss", "d3g6", None, None, None)
+    assert not any("recapture" in f for f in facts)
+
+
+def test_capturing_into_a_recapture_is_a_trade_not_a_hanging_piece():
+    # Real game: 15...Nxc3 16. dxc3 is knight for knight.
+    b = board("e4 e5 Nf3 Nf6 Nc3 Nc6 Bc4 Bc5 O-O d6 a3 Bg4 b4 Bd4 h3 Bxf3 Qxf3 Qe7 Bb2 O-O-O b5 Na5 Bd3 Qe6 a4 d5 exd5 Nxd5 Rab1")
+    assert describe(b, b.parse_san("Nxc3"), "blunder", None, "d2c3", None, None) == []
+
+
+def test_best_move_that_wins_material_says_what_it_wins():
+    b = board("4k3/8/8/3n4/4P3/8/8/4K3 w - - 0 1")
+    assert describe(b, b.parse_san("Kf2"), "blunder", "e4d5", None, None, None) == ["exd5 would have won the knight"]
+
+
+def test_defended_piece_attacked_by_something_cheaper_is_hanging():
+    # 1. Nc3?? lets ...d4 hit it; the knight can be taken by a pawn even though b2 defends it.
+    b = board("4k3/8/8/8/3p4/8/1P6/1N2K3 w - - 0 1")
+    facts = describe(b, b.parse_san("Nc3"), "blunder", None, "d4c3", None, None)
+    assert facts == ["Nc3 leaves the knight on c3 hanging", "it allows dxc3, winning material"]
+
+
+def test_long_mates_are_not_counted():
+    b = board("e4 e5 Qh5 Nc6 Bc4")
+    facts = describe(b, b.parse_san("Nf6"), "blunder", "g7g6", "h5f7", None, 9)
+    assert "it allows a forced mate, starting with Qxf7#" in facts

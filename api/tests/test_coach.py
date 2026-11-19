@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from review.coach import MAX_MOVES, add_coach, key_moves, parse_comments
+from review.coach import MAX_MOVES, add_coach, fallback, key_moves, parse_comments
 
 
 def move(ply, badge, tactics=None, san="Nf6"):
@@ -45,10 +45,10 @@ def test_add_coach_uses_ai_text():
 
     async def fake_ai(model, inputs):
         assert "[id 18]" in inputs["messages"][1]["content"]
-        return {"response": {"comments": [{"ply": 18, "comment": "b5 drops a pawn."}]}}
+        return {"response": {"comments": [{"ply": 18, "comment": "A's Nf6 drops a pawn."}]}}
 
     asyncio.run(add_coach(r, fake_ai))
-    assert r["moves"][0]["coach"] == "b5 drops a pawn."
+    assert r["moves"][0]["coach"] == "A's Nf6 drops a pawn."
     assert "coach" not in r["moves"][1]
 
 
@@ -67,3 +67,31 @@ def test_add_coach_falls_back_to_facts_when_ai_fails():
     asyncio.run(add_coach(r, broken_ai))
     assert r["moves"][0]["coach"] == "Nf6 leaves the queen on d4 hanging."
     assert r["moves"][1]["coach"] == "Qc7 was stronger."
+
+
+def test_ai_comment_naming_a_move_outside_the_facts_is_replaced_by_the_facts():
+    r = report([move(18, "blunder", ["Nf6 leaves the queen on d4 hanging"])])
+
+    async def inventive_ai(model, inputs):
+        return {"response": {"comments": [{"id": 18, "comment": "B's Nf6 walks into Bxh7+, winning the queen."}]}}
+
+    asyncio.run(add_coach(r, inventive_ai))
+    assert r["moves"][0]["coach"] == "Nf6 leaves the queen on d4 hanging."
+
+
+def test_ai_comment_naming_a_square_outside_the_facts_is_replaced():
+    r = report([move(18, "blunder", ["Nf6 leaves the queen on d4 hanging"])])
+
+    async def inventive_ai(model, inputs):
+        return {"response": {"comments": [{"id": 18, "comment": "Nf6 leaves the queen on d4 hanging and weakens h7."}]}}
+
+    asyncio.run(add_coach(r, inventive_ai))
+    assert r["moves"][0]["coach"] == "Nf6 leaves the queen on d4 hanging."
+
+
+def test_fallback_keeps_pawn_moves_lowercase():
+    m = move(18, "mistake")
+    m["alternatives"] = [{"uci": "h4h5", "san": "h5", "w": 50.0}]
+    assert fallback(m) == "h5 was stronger."
+    m["tactics"] = ["bxa6 leaves the rook on a1 hanging", "it allows Re1+, winning the rook"]
+    assert fallback(m) == "bxa6 leaves the rook on a1 hanging. It allows Re1+, winning the rook."

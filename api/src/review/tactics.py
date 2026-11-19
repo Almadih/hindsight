@@ -2,7 +2,7 @@
 
 import chess
 
-from .classify import VALUE, _hanging, is_sacrifice
+from .classify import VALUE, is_sacrifice
 
 KEY_BADGES = {"blunder", "miss", "mistake", "brilliant", "great"}
 GOOD_BADGES = {"brilliant", "great"}
@@ -25,6 +25,50 @@ def _pieces(board: chess.Board, color: chess.Color) -> list[chess.Square]:
 
 def _piece(board: chess.Board, sq: chess.Square) -> str:
     return f"{NAME[board.piece_type_at(sq)]} on {chess.square_name(sq)}"
+
+
+def _see(board: chess.Board, sq: chess.Square) -> int:
+    """Material the side to move nets by capturing on sq, both sides then recapturing with their cheapest piece
+    while it pays. Built on legal moves, so pins and x-rays count."""
+    if board.piece_at(sq) is None:
+        return 0
+    captures = [m for m in board.legal_moves if m.to_square == sq]
+    if not captures:
+        return 0
+    first = min(captures, key=lambda m: VALUE[board.piece_type_at(m.from_square)])
+    after = board.copy(stack=False)
+    after.push(first)
+    return max(0, VALUE[board.piece_type_at(sq)] - _see(after, sq))
+
+
+def _capture_gain(board: chess.Board, move: chess.Move) -> int:
+    """Net material for the side to move from this capture once the exchanges on that square are over."""
+    target = board.piece_type_at(move.to_square)
+    if target is None:  # en passant or not a capture
+        return 0
+    after = board.copy(stack=False)
+    after.push(move)
+    return VALUE[target] - _see(after, move.to_square)
+
+
+def _wins(board: chess.Board, move: chess.Move, gain: int) -> str:
+    """'the knight' when the captured piece is won outright, 'material' when the exchanges only net part of it."""
+    return f"the {NAME[board.piece_type_at(move.to_square)]}" if gain >= VALUE[board.piece_type_at(move.to_square)] else "material"
+
+
+def _mate(n: int) -> str:
+    # Past 5 moves a depth-16 search rarely has the shortest mate, so its count isn't worth quoting.
+    return f"mate in {n}" if n <= 5 else "a forced mate"
+
+
+def _threatened(board: chess.Board, color: chess.Color) -> set[chess.Square]:
+    """Pieces of `color` the opponent could win right now if it were their move."""
+    if board.turn == color:
+        if board.is_check():
+            return set()
+        board = board.copy(stack=False)
+        board.push(chess.Move.null())
+    return {sq for sq in _pieces(board, color) if _see(board, sq) > 0}
 
 
 def motifs(board: chess.Board, move: chess.Move) -> list[str]:
@@ -87,7 +131,7 @@ def describe(
         after.push(move)
         reply = parse_move(after, reply_uci)
         if mate_after is not None and mate_after < 0 and not after.is_checkmate():
-            facts.append(f"it forces mate in {-mate_after}")
+            facts.append(f"it forces {_mate(-mate_after)}")
         if reply:
             facts.append(f"the best answer is {after.san(reply)}")
         return facts
@@ -96,25 +140,43 @@ def describe(
     mover = board.turn
     after = board.copy(stack=False)
     after.push(move)
+    captured = VALUE[board.piece_type_at(move.to_square)] if board.piece_type_at(move.to_square) else 0
     facts = []
 
-    hanging_before = {sq for sq in _pieces(board, mover) if _hanging(board, sq)}
-    hanging = [sq for sq in _pieces(after, mover) if sq not in hanging_before and _hanging(after, sq)]
-    if hanging:
-        facts.append(f"{san} leaves the {_piece(after, hanging[0])} hanging")
+    best = parse_move(board, best_uci)
+    missed_mate = mate_before is not None and mate_before > 0
+    if best and best != move and not missed_mate:
+        gain = _capture_gain(board, best)
+        if gain > 0:
+            prev = board.copy()
+            last = prev.pop() if prev.move_stack else None
+            if last and prev.is_capture(last) and last.to_square == best.to_square:
+                if move.to_square != best.to_square:
+                    facts.append(f"{san} misses the recapture {board.san(best)}")
+            else:
+                facts.append(f"{board.san(best)} would have won {_wins(board, best, gain)}")
+
+    before = _threatened(board, mover)
+    for sq in _pieces(after, mover):
+        # A piece that just captured and gets taken back is a trade, not a loss.
+        loss = _see(after, sq) - (captured if sq == move.to_square else 0)
+        if loss > 0 and sq not in before:
+            facts.append(f"{san} leaves the {_piece(after, sq)} hanging")
+            break
 
     reply = parse_move(after, reply_uci)
     if reply:
         reply_san = after.san(reply)
         if mate_after is not None and mate_after > 0:
-            facts.append(f"it allows mate in {mate_after}, starting with {reply_san}")
-        elif after.is_capture(reply) and not after.is_en_passant(reply):
-            facts.append(f"it allows {reply_san}, winning the {NAME[after.piece_type_at(reply.to_square)]}")
+            facts.append(f"it allows {_mate(mate_after)}, starting with {reply_san}")
+        elif after.is_capture(reply):
+            gain = _capture_gain(after, reply) - (captured if reply.to_square == move.to_square else 0)
+            if gain > 0:
+                facts.append(f"it allows {reply_san}, winning {_wins(after, reply, gain)}")
 
-    best = parse_move(board, best_uci)
     if best and best != move:
-        if mate_before is not None and mate_before > 0:
-            facts.append(f"{board.san(best)} would have started mate in {mate_before}")
+        if missed_mate:
+            facts.append(f"{board.san(best)} would have started {_mate(mate_before)}")
         else:
             facts.extend(f for f in motifs(board, best) if not f.endswith("offers material"))
     return facts

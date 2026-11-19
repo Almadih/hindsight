@@ -5,6 +5,11 @@
 
 import json
 import logging
+import re
+
+import chess
+
+from .tactics import parse_move
 
 # plan.md named @cf/meta/llama-3.1-8b-instruct; it was deprecated on 2026-05-30. This one supports JSON mode.
 MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
@@ -19,6 +24,8 @@ SYSTEM = (
     "The verdict is already shown as a badge, so never restate it: do not start with 'This move', and do not "
     "write filler such as 'increasing winning chances' or 'maintaining a strong position'. "
     "Use only the facts given; never invent moves, variations or evaluations. "
+    "Name only moves and squares that appear in the facts, the move itself or the engine's best move: "
+    "a comment that names any other move or square is thrown away. With few facts, write less. "
     # The example must not come from any game we might review, or the model parrots it.
     "Good: 'Anna's Nf5 forks the queen on d6 and the rook on h6, so one of them falls next move.' "
     "Bad: 'This move was brilliant as it offers material, increasing White's winning chances.' "
@@ -56,12 +63,56 @@ def _move_label(m: dict) -> str:
     return f"{number}.{'' if m['color'] == 'white' else '..'} {m['san']}"
 
 
+# Moves and squares as they appear in text: Nf6, exd5, O-O, e4 (a pawn push reads as a square).
+_TOKEN = re.compile(r"O-O(?:-O)?|\b(?:[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|[a-h]x[a-h][1-8]|[a-h][1-8])(?:=[QRBN])?[+#]?")
+_SQUARE = re.compile(r"[a-h][1-8]")
+
+
+def _sentence(fact: str) -> str:
+    # Never capitalise a leading move: "bxa6" is not "Bxa6".
+    return fact if _TOKEN.match(fact) else fact[0].upper() + fact[1:]
+
+
+def _line_sans(fen: str | None, pv: list[str] | None, n: int = 6) -> list[str]:
+    if not fen or not pv:
+        return []
+    board, out = chess.Board(fen), []
+    for uci in pv[:n]:
+        move = parse_move(board, uci)
+        if move is None:
+            break
+        out.append(board.san(move))
+        board.push(move)
+    return out
+
+
+def _grounded(comment: str, m: dict, report: dict) -> bool:
+    """True if every move and square the comment names comes from this move's facts or engine lines."""
+    by_ply = {x["ply"]: x for x in report["moves"]}
+    prev = by_ply.get(m["ply"] - 1)
+    before_fen = prev["fen"] if prev and prev.get("fen") else report["headers"].get("FEN", chess.STARTING_FEN)
+    nxt = by_ply.get(m["ply"] + 1) or {}
+    texts = [m["san"], *(a["san"] for a in m.get("alternatives") or []), *(m.get("tactics") or [])]
+    texts += _line_sans(before_fen, m.get("bestPv")) + _line_sans(m.get("fen"), nxt.get("bestPv"))
+    ucis = [m.get("uci") or "", *(a.get("uci") or "" for a in m.get("alternatives") or [])]
+    ucis += (m.get("bestPv") or [])[:6] + (nxt.get("bestPv") or [])[:6]
+    moves = {t.rstrip("+#") for text in texts for t in _TOKEN.findall(text)}
+    squares = {sq for text in texts + ucis for sq in _SQUARE.findall(text)}
+    for name in filter(None, (report["headers"].get("White"), report["headers"].get("Black"))):
+        comment = re.sub(rf"(?<!\w){re.escape(name)}(?!\w)", " ", comment)  # a name like "Kd4" isn't a move
+    for token in _TOKEN.findall(comment):
+        token = token.rstrip("+#")
+        if token not in moves and not (_SQUARE.fullmatch(token) and token in squares):
+            return False
+    return True
+
+
 def fallback(m: dict) -> str:
     facts = list(m.get("tactics") or [])
     best = m["alternatives"][0]["san"] if m.get("alternatives") else None
     if not facts and best and best != m["san"] and m["badge"] not in ("brilliant", "great"):
         facts.append(f"{best} was stronger")
-    return " ".join(f[0].upper() + f[1:] + "." for f in facts)
+    return " ".join(_sentence(f) + "." for f in facts)
 
 
 def build_messages(report: dict, moves: list[dict]) -> list[dict]:
@@ -136,4 +187,8 @@ async def add_coach(report: dict, run_ai) -> None:
     except Exception as e:  # noqa: BLE001 - the coach is optional; the review must still be returned
         logging.warning("coach: AI call failed, using fact-based comments: %r", e)
     for m in moves:
-        m["coach"] = comments.get(m["ply"]) or fallback(m) or None
+        comment = comments.get(m["ply"])
+        if comment and not _grounded(comment, m, report):
+            logging.warning("coach: dropped AI comment naming moves or squares outside the facts: %r", comment)
+            comment = None
+        m["coach"] = comment or fallback(m) or None
