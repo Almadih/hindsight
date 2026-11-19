@@ -694,9 +694,9 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                   _wasWide = wide;
                   WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
                 }
-                // Wide: board fills the height minus the two 32dp player bars (+8 slack); tall tablets: cap so coach, strip and bar still fit.
+                // Wide: board fills the height minus the two player bars (+8 slack); tall tablets: cap so coach, strip and bar still fit.
                 final size = wide
-                    ? math.max(100.0, math.min(c.maxHeight - 72, c.maxWidth * 0.55 - kEvalBarWidth))
+                    ? math.max(100.0, math.min(c.maxHeight - 2 * kPlayerBarHeight - 8, c.maxWidth * 0.55 - kEvalBarWidth))
                     : math.min(c.maxWidth - kEvalBarWidth - 16, c.maxHeight * 0.55);
                 final coach = Semantics(liveRegion: true, child: card);
                 final board = RepaintBoundary(

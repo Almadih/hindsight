@@ -135,7 +135,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           if (fen != null && _error == null)
             Expanded(
               child: LayoutBuilder(builder: (_, c) {
-                final size = ((c.maxWidth < c.maxHeight - 64 ? c.maxWidth : c.maxHeight - 64) - kEvalBarWidth).clamp(80.0, 2000.0);
+                final size = ((c.maxWidth < c.maxHeight - 2 * kPlayerBarHeight ? c.maxWidth : c.maxHeight - 2 * kPlayerBarHeight) - kEvalBarWidth).clamp(80.0, 2000.0);
                 return Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     SizedBox(width: size + kEvalBarWidth, child: bar(top)),
