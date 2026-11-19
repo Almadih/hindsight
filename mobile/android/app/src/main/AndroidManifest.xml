@@ -33,6 +33,12 @@
                 <data android:scheme="https" android:host="hindsight.almadih.dev" android:pathPrefix="/review"/>
                 <data android:scheme="https" android:host="hindsight.almadih.dev" android:pathPrefix="/player"/>
             </intent-filter>
+            <!-- "Share" a PGN from another app straight into a review. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
