@@ -97,3 +97,34 @@ def test_extreme_cp_rejected():
         Line(uci="e2e4", cp=-200_000, pv=["e2e4"])
     with pytest.raises(ValidationError):
         Line(uci="e2e4", cp=200_000, pv=["e2e4"])
+
+
+BACK_RANK = """[FEN "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"]
+[SetUp "1"]
+
+1. h3 h6"""
+
+
+def _badge_after(before: dict, after: dict) -> str:
+    """Badge for White's 1.h3 given White's score before it and Black's score after it."""
+    board = chess.Board("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1")
+    evals = [{"fen": board.fen(), "lines": [{"uci": "a1a8", "pv": ["a1a8"], **before}]}]
+    board.push_uci("h2h3")
+    evals.append({"fen": board.fen(), "lines": [{"uci": "h7h6", "pv": ["h7h6"], **after}]})
+    board.push_uci("h7h6")
+    evals.append({"fen": board.fen(), "lines": [{"uci": "a1a8", "pv": ["a1a8"], "cp": 0}]})
+    return run(BACK_RANK, evals)["moves"][0]["badge"]
+
+
+def test_missing_a_long_mate_is_judged_like_a_big_advantage():
+    assert _badge_after({"mate": 3}, {"cp": -600}) == "miss"  # a mate in 3 is there to be seen
+    assert _badge_after({"mate": 4}, {"cp": -600}) == "inaccuracy"  # past the horizon: judged as +6 vs a won game
+    assert _badge_after({"mate": 12}, {"cp": -600}) == "inaccuracy"
+    assert _badge_after({"mate": 20}, {"cp": -1500}) == "excellent"
+
+
+def test_allowing_a_long_mate_is_judged_like_a_lost_position():
+    assert _badge_after({"cp": -300}, {"mate": 3}) == "blunder"  # walks into a visible mate
+    assert _badge_after({"cp": -300}, {"mate": 15}) == "mistake"  # already worse; the mate is beyond the horizon
+    assert _badge_after({"cp": 100}, {"mate": 15}) == "blunder"  # throwing away an equal game is still a blunder
+    assert _badge_after({"mate": -20}, {"mate": 3}) != "blunder"  # already being mated

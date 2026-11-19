@@ -6,6 +6,10 @@ All scores are from the perspective of the side to move unless a name says other
 import math
 
 MATE_CP = 10000
+# Longest forced mate (in the mating side's moves) a player can be expected to spot over the board.
+# Longer engine mates are real but invisible to humans, so badges treat them as a decisive edge, not a mate.
+HUMAN_MATE = 3
+LONG_MATE_CP = 1000  # what a too-long-to-see mate is worth for badges and accuracy: about +10, ~97.5% win
 
 
 def score_to_cp(cp: int | None, mate: int | None) -> int:
@@ -15,6 +19,13 @@ def score_to_cp(cp: int | None, mate: int | None) -> int:
             return -MATE_CP
         return int(math.copysign(MATE_CP - 10 * abs(mate), mate))
     return cp or 0
+
+
+def perceived_cp(cp: int | None, mate: int | None) -> int:
+    """score_to_cp as a human would feel it: a mate longer than HUMAN_MATE is a won position, not a certain one."""
+    if mate is not None and abs(mate) > HUMAN_MATE:
+        return int(math.copysign(LONG_MATE_CP, mate))
+    return score_to_cp(cp, mate)
 
 
 def win_pct(cp: float) -> float:
