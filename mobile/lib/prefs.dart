@@ -8,7 +8,7 @@ Future<void> initPrefs() async => prefs = await SharedPreferences.getInstance();
 /// Analysis depth by quality, same as web/lib/engine/pool.ts QUALITY_DEPTH.
 const qualityDepth = {'quick': 14, 'standard': 16, 'deep': 18};
 
-String get quality => prefs.getString('hindsight_quality') ?? 'standard';
+String get quality => prefs.getString('hindsight_quality') ?? 'quick'; // phones: depth 14 is ~2.6x faster than 16 (measured)
 set quality(String v) => prefs.setString('hindsight_quality', v);
 
 bool get soundOn => prefs.getBool('sound') ?? true;
