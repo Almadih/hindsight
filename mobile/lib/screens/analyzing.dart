@@ -68,9 +68,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       setState(() => _classifying = true);
       final report = await analyze(game.pgn, evals: evals, fresh: widget.fresh);
       if (mounted) _open(report, fens[0], shared: false, linkable: !widget.fresh);
-    } on StateError {
-      // cancelled: the screen is gone
     } catch (e) {
+      // A cancel throws StateError after the screen is gone (!mounted); any other error, e.g. the engine still busy, is shown.
       if (mounted) setState(() => _error = e);
     }
   }

@@ -117,7 +117,7 @@ export async function analyzePositions(
   } = {},
 ): Promise<PositionEval[]> {
   const depth = opts.depth ?? (opts.quality ? QUALITY_DEPTH[opts.quality] : QUALITY_DEPTH.standard);
-  const { multiPv = 3, onProgress, onPosition, signal } = opts;
+  const { multiPv = 2, onProgress, onPosition, signal } = opts;
   signal?.throwIfAborted();
 
   const isSimd = await hasWasmSimd();

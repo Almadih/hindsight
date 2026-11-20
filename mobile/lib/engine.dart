@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:dartchess/dartchess.dart';
 import 'package:multistockfish/multistockfish.dart';
 
 import 'models.dart';
@@ -39,6 +40,7 @@ const _maxMs = 5000; // per-position backstop
 Future<List<PositionEval>> analyzePositions(
   List<String> fens, {
   int depth = 16,
+  int multiPv = 2, // line 2 feeds the "great" badge; line 3 only a 5 cp tie check, ~1.4-2.5x slower (analysis-speed.md)
   void Function(int index, PositionEval ev)? onPosition,
   bool Function()? cancelled,
 }) async {
@@ -71,10 +73,19 @@ Future<List<PositionEval>> analyzePositions(
       // 3 measured faster than 6 on a full game (328s vs 371s, 8-core phone): more threads only add heat.
       sf.stdin = 'setoption name Threads value ${max(1, min(3, Platform.numberOfProcessors - 1))}';
       sf.stdin = 'setoption name Hash value 64';
-      sf.stdin = 'setoption name MultiPV value 3';
+      sf.stdin = 'setoption name MultiPV value $multiPv';
       final results = <PositionEval>[];
       for (var i = 0; i < fens.length; i++) {
         if (cancelled?.call() ?? false) throw StateError('analysis cancelled');
+        // Game-over positions report no PV and the API scores them itself; skip the engine — on the phone the
+        // bestmove for a final checkmate after an early-stopped mate search sometimes never arrives (15 s hang).
+        final pos = Chess.fromSetup(Setup.parseFen(fens[i]));
+        if (pos.isCheckmate || pos.isStalemate) {
+          final ev = PositionEval(fens[i], const []);
+          results.add(ev);
+          onPosition?.call(i, ev);
+          continue;
+        }
         byPv.clear();
         stopped = false;
         bestmove = Completer<void>();
