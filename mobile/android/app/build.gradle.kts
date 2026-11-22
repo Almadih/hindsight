@@ -54,6 +54,16 @@ android {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            // Only StockfishFlavor.light is used; drop unused chess/variant engines (~3.4 MB/ABI).
+            excludes += setOf(
+                "**/libmultistockfish_chess.so",
+                "**/libmultistockfish_variant.so",
+            )
+        }
+    }
 }
 
 kotlin {
