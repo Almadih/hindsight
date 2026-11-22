@@ -55,13 +55,9 @@ android {
         }
     }
 
-    packaging {
-        jniLibs {
-            // Only StockfishFlavor.light is used; drop unused chess/variant engines (~3.4 MB/ABI).
-            excludes += setOf(
-                "**/libmultistockfish_chess.so",
-                "**/libmultistockfish_variant.so",
-            )
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 }

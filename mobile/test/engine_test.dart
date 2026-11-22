@@ -1,7 +1,69 @@
+import 'dart:async';
+
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hindsight/engine.dart';
+import 'package:hindsight/game.dart';
 import 'package:hindsight/models.dart';
+import 'package:hindsight/native_engine.dart';
+
+class _FakePool implements EnginePool {
+  _FakePool({this.workerCount = 4, this.onSearch});
+
+  @override
+  final int workerCount;
+
+  final Future<List<EngineLine>> Function(
+    int workerId,
+    String fen, {
+    required int depth,
+    int? nodes,
+    required int movetimeMs,
+    required int multiPv,
+    List<String>? searchmoves,
+  })? onSearch;
+
+  int clears = 0;
+  int stops = 0;
+  final calls = <(int workerId, String fen, List<String>? searchmoves)>[];
+
+  @override
+  Future<T> runExclusive<T>(Future<T> Function() body) => body();
+
+  @override
+  Future<void> clearAll() async => clears++;
+
+  @override
+  Future<List<EngineLine>> search(
+    int workerId,
+    String fen, {
+    required int depth,
+    int? nodes,
+    required int movetimeMs,
+    required int multiPv,
+    List<String>? searchmoves,
+  }) async {
+    calls.add((workerId, fen, searchmoves));
+    if (onSearch != null) {
+      return onSearch!(
+        workerId,
+        fen,
+        depth: depth,
+        nodes: nodes,
+        movetimeMs: movetimeMs,
+        multiPv: multiPv,
+        searchmoves: searchmoves,
+      );
+    }
+    final pos = Chess.fromSetup(Setup.parseFen(fen));
+    final ucis = searchmoves ?? legalUcis(pos);
+    final move = ucis.first;
+    return [EngineLine(uci: move, cp: 25, pv: [move])];
+  }
+
+  @override
+  void stopAll() => stops++;
+}
 
 void main() {
   test('parses cp with multipv', () {
@@ -211,5 +273,67 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('analyzePositions schedules tile4 in parallel, deduplicates, derives forced moves, and runs Pass 2', () async {
+    // Includes repetition (1. Nf3 Nf6 2. Ng1 Ng8 returns to start pos) and a forced check evasion before mate (Fool's-like).
+    final game = parsePgn('1. Nf3 Nf6 2. Ng1 Ng8 3. f3 e5 4. g4 Qh4# *');
+    final fens = game.fens;
+    final seenIndices = <int>{};
+    final pool = _FakePool(
+      workerCount: 4,
+      onSearch: (w, fen, {required depth, nodes, required movetimeMs, required multiPv, searchmoves}) async {
+        // Yield slightly differently per worker to exercise out-of-order completion.
+        await Future<void>.delayed(Duration(milliseconds: (w + 1) * 2));
+        final pos = Chess.fromSetup(Setup.parseFen(fen));
+        final ucis = searchmoves ?? legalUcis(pos);
+        // Make ply 4 (white's f3) look like a blunder (cp +200 before, +500 for black after) to trigger Pass 2 Retry.
+        final cp = fen == fens[5] ? 500 : 25;
+        return [EngineLine(uci: ucis.first, cp: cp, pv: [ucis.first])];
+      },
+    );
+
+    final evals = await analyzePositions(
+      fens,
+      depth: 14,
+      onPosition: (i, _) => seenIndices.add(i),
+      pool: pool,
+    );
+
+    expect(pool.clears, 1);
+    expect(evals.length, fens.length);
+    expect(seenIndices.length, fens.length); // every ply reported exactly once
+    expect(evals.last.lines, isEmpty); // final checkmate skipped
+
+    // Pass 1 deduplicates fens[0] and fens[4] (same 4-field FEN after Nf3 Nf6 Ng1 Ng8).
+    final pass1StartCalls = pool.calls.where((c) => c.$3 == null && fenDedupKey(c.$2) == fenDedupKey(fens[0])).length;
+    expect(pass1StartCalls, 1);
+
+    // Pass 2 runs with searchmoves excluding PV1 on candidates (e.g. fens[4] blunder to f3).
+    final pass2ForBlunder = pool.calls.where((c) => c.$2 == fens[4] && c.$3 != null).toList();
+    expect(pass2ForBlunder, hasLength(1));
+    expect(pass2ForBlunder.single.$3, isNot(contains(evals[4].lines.first.uci)));
+    expect(evals[4].lines.length, 2);
+  });
+
+  test('analyzePositions cancels mid-flight and invokes stopAll', () async {
+    final game = parsePgn('1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 *');
+    final cancel = Completer<void>();
+    final pool = _FakePool(
+      workerCount: 2,
+      onSearch: (w, fen, {required depth, nodes, required movetimeMs, required multiPv, searchmoves}) async {
+        if (!cancel.isCompleted) cancel.complete();
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        final pos = Chess.fromSetup(Setup.parseFen(fen));
+        final u = legalUcis(pos).first;
+        return [EngineLine(uci: u, cp: 0, pv: [u])];
+      },
+    );
+
+    await expectLater(
+      analyzePositions(game.fens, depth: 14, cancel: cancel.future, pool: pool),
+      throwsA(isA<StateError>()),
+    );
+    expect(pool.stops, greaterThanOrEqualTo(1));
   });
 }

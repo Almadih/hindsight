@@ -30,7 +30,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   List<String> _fens = const [], _sans = const [];
   Map<String, String> _headers = const {};
   int _done = 0;
-  PositionEval? _ev; // the last evaluated position
+  int _evIndex = -1;
+  PositionEval? _ev; // the furthest evaluated position shown on the live board
   bool _classifying = false, _flipped = false;
   Object? _error;
   Completer<void> _cancel = Completer<void>();
@@ -67,8 +68,11 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         onPosition: (i, ev) {
           if (mounted) {
             setState(() {
-              _done = i + 1;
-              _ev = ev;
+              _done = (_done + 1).clamp(0, _fens.length);
+              if (i >= _evIndex && (ev.lines.isNotEmpty || _ev == null)) {
+                _evIndex = i;
+                _ev = ev;
+              }
             });
           }
         },
@@ -92,6 +96,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       _error = null;
       _fens = const [];
       _done = 0;
+      _evIndex = -1;
       _ev = null;
       _classifying = false;
     });
@@ -106,8 +111,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     final ev = _ev;
     final best = ev?.lines.firstOrNull?.uci;
     final san = best == null ? null : uciToSan(ev!.fen, best);
-    if (san == null) return 'Warming up the engine…';
-    final shown = _done - 1;
+    if (san == null || _evIndex < 0) return 'Warming up the engine…';
+    final shown = _evIndex;
     final move = shown == 0 ? 'the start' : '${(shown / 2).ceil()}.${shown.isOdd ? '' : '..'} ${_sans[shown - 1]}';
     return 'After $move the engine wants $san (${formatEval(whiteEvalOf(ev!))})';
   }

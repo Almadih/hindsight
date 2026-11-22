@@ -2,15 +2,17 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dartchess/dartchess.dart';
-import 'package:multistockfish/multistockfish.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'models.dart';
+import 'native_engine.dart';
 import 'review_logic.dart' show standardUci;
 
 const _pvMax = 20; // the API caps PVs at 40 moves
 const _maxMs = 5000; // per-position backstop
 const _pv2Depth = 12;
 const _pv2Nodes = 40000;
+const _tileSize = 4; // 4 contiguous plies/tile balances local TT reuse and load balance across workers
 const _mateCp = 10000;
 const _humanMate = 3;
 const _longMateCp = 1000;
@@ -172,7 +174,7 @@ bool needsSecondLine({
   );
 }
 
-/// Evaluates every position one after another on a single native Stockfish.
+/// Evaluates every position using the warm native StockfishLight FFI worker pool (tile4 work-stealing).
 /// Throws StateError if [cancelled] returns true or [cancel] completes.
 Future<List<PositionEval>> analyzePositions(
   List<String> fens, {
@@ -181,129 +183,139 @@ Future<List<PositionEval>> analyzePositions(
   void Function(int index, PositionEval ev)? onPosition,
   bool Function()? cancelled,
   Future<void>? cancel,
+  @visibleForTesting EnginePool? pool,
 }) async {
   if (cancelled?.call() ?? false) throw StateError('analysis cancelled');
   if (fens.isEmpty) return const [];
+
+  final activePool = pool ?? NativeEnginePool.instance;
   final twoPass = multiPv == 2 && fens.length > 1;
-  final sf = await Stockfish.create(flavor: StockfishFlavor.light);
-  var active = true;
-  var isCancelled = false;
-  try {
-    final readyok = Completer<void>();
-    var bestmove = Completer<void>();
-    final byPv = <int, EngineLine>{};
-    var stopped = false;
-    final sub = sf.stdout.listen((line) {
-      if (line == 'readyok') {
-        if (!readyok.isCompleted) readyok.complete();
-        return;
-      }
-      if (line.startsWith('bestmove')) {
-        // Guard against multistockfish's sfio.cpp in.tie(&out) race duplicating a previous bestmove before info arrives.
-        if (!bestmove.isCompleted && (byPv.isNotEmpty || stopped)) bestmove.complete();
-        return;
-      }
-      final info = parseInfo(line);
-      if (info == null) return;
-      byPv[info.multipv] = EngineLine(
-        uci: info.line.uci,
-        cp: info.line.cp,
-        mate: info.line.mate,
-        pv: info.line.pv.take(_pvMax).toList(),
-      );
-      // Once PV1 is a mate the search has fully seen, more depth only burns time on extra plies/lines.
-      final mate = info.line.mate;
-      if (!stopped && info.multipv == 1 && mate != null && info.depth >= min(2 * mate.abs(), 10)) {
-        stopped = true;
-        sf.stdin = 'stop';
-      }
-    });
+
+  return activePool.runExclusive(() async {
+    var isCancelled = cancelled?.call() ?? false;
+    if (isCancelled) throw StateError('analysis cancelled');
+
+    var active = true;
     cancel?.then((_) {
       isCancelled = true;
-      if (!active) return;
-      try {
-        sf.stdin = 'stop';
-      } catch (_) {}
-      if (!readyok.isCompleted) readyok.completeError(StateError('analysis cancelled'));
-      if (!bestmove.isCompleted) bestmove.completeError(StateError('analysis cancelled'));
+      if (active) activePool.stopAll();
     });
 
-    Future<List<EngineLine>> runSearch(String fen, String goCmd) async {
-      byPv.clear();
-      stopped = false;
-      bestmove = Completer<void>();
-      sf.stdin = 'position fen $fen';
-      sf.stdin = goCmd;
-      await bestmove.future.timeout(const Duration(milliseconds: _maxMs * 3));
-      return [for (final k in byPv.keys.toList()..sort()) byPv[k]!];
+    bool checkCancelled() {
+      if (!isCancelled && (cancelled?.call() ?? false)) {
+        isCancelled = true;
+        activePool.stopAll();
+      }
+      return isCancelled;
     }
 
     try {
-      // Threads=1 is ~2.15x faster than Threads=3 on StockfishLight (Lazy SMP thrashes at d14-d16, 10x CPU/heat).
-      sf.stdin = 'setoption name Threads value 1';
-      sf.stdin = 'setoption name Hash value 64';
-      sf.stdin = 'setoption name MultiPV value ${twoPass ? 1 : multiPv}';
-      sf.stdin = 'isready';
-      await readyok.future.timeout(const Duration(seconds: 10));
+      await activePool.clearAll();
+      if (checkCancelled()) throw StateError('analysis cancelled');
 
       final positions = [for (final fen in fens) Chess.fromSetup(Setup.parseFen(fen))];
       final allLegalUcis = [for (final pos in positions) legalUcis(pos)];
       final results = List<PositionEval?>.filled(fens.length, null);
-      final dedupCache = <String, List<EngineLine>>{};
-      final pendingForced = <int>[];
-      final nodesCap = _pass1Nodes(depth);
-      final pass1Go = nodesCap != null ? 'go depth $depth nodes $nodesCap movetime $_maxMs' : 'go depth $depth movetime $_maxMs';
+
+      // Pre-classify terminal, insufficient-material, forced, and duplicate positions before dispatching tiles.
+      final forcedIndices = <int>[];
+      final terminalIndices = <int>[];
+      final firstByKey = <String, int>{};
+      final followersByFirst = <int, List<int>>{};
+      final toSearch = <int>[];
 
       for (var i = 0; i < fens.length; i++) {
-        if (isCancelled || (cancelled?.call() ?? false)) throw StateError('analysis cancelled');
         final pos = positions[i];
         if (pos.isCheckmate || pos.isStalemate) {
-          // Game-over positions report no PV and the API scores them itself.
           results[i] = PositionEval(fens[i], const []);
+          terminalIndices.add(i);
         } else if (pos.isInsufficientMaterial) {
           // Include a legal 0 cp line so the API never 422s if python-chess disagrees on an exotic draw.
           final uci = allLegalUcis[i].first;
           results[i] = PositionEval(fens[i], [EngineLine(uci: uci, cp: 0, pv: [uci])]);
+          terminalIndices.add(i);
         } else if (i < fens.length - 1 && allLegalUcis[i].length == 1) {
-          // Forced move: derive score right-to-left once the next non-forced position finishes.
-          pendingForced.add(i);
-          continue;
+          forcedIndices.add(i);
         } else {
           final key = fenDedupKey(fens[i]);
-          final cached = key != null ? dedupCache[key] : null;
-          if (cached != null) {
-            results[i] = PositionEval(fens[i], cached);
+          final first = key != null ? firstByKey[key] : null;
+          if (first != null) {
+            (followersByFirst[first] ??= []).add(i);
           } else {
-            final lines = await runSearch(fens[i], pass1Go);
-            if (key != null && lines.isNotEmpty) dedupCache[key] = lines;
-            results[i] = PositionEval(fens[i], lines);
+            if (key != null) firstByKey[key] = i;
+            toSearch.add(i);
           }
         }
+      }
 
-        if (pendingForced.isNotEmpty) {
-          for (var k = pendingForced.length - 1; k >= 0; k--) {
-            final j = pendingForced[k];
-            final childPos = positions[j + 1];
-            results[j] = deriveForcedEval(
-              fens[j],
-              allLegalUcis[j].first,
-              results[j + 1]!,
-              childCheckmate: childPos.isCheckmate,
-              childDraw: childPos.isStalemate || childPos.isInsufficientMaterial,
-            );
-          }
-          for (final j in pendingForced) {
-            onPosition?.call(j, results[j]!);
-          }
-          pendingForced.clear();
-        }
-        onPosition?.call(i, results[i]!);
+      // Build contiguous tile4 batches of unique positions to preserve per-worker TT hits while balancing load.
+      final tiles = <List<int>>[
+        for (var start = 0; start < toSearch.length; start += _tileSize)
+          toSearch.sublist(start, min(start + _tileSize, toSearch.length)),
+      ];
+      final nodesCap = _pass1Nodes(depth);
+      final pass1MultiPv = twoPass ? 1 : multiPv;
+      final nWorkers = min(activePool.workerCount, max(1, tiles.length));
+
+      var nextTile = 0;
+      await Future.wait([
+        for (var w = 0; w < nWorkers; w++)
+          () async {
+            while (!checkCancelled()) {
+              if (nextTile >= tiles.length) break;
+              final tile = tiles[nextTile++];
+              for (final idx in tile) {
+                if (checkCancelled()) break;
+                final lines = await activePool.search(
+                  w,
+                  fens[idx],
+                  depth: depth,
+                  nodes: nodesCap,
+                  movetimeMs: _maxMs,
+                  multiPv: pass1MultiPv,
+                );
+                if (checkCancelled()) break;
+                final ev = PositionEval(fens[idx], lines);
+                results[idx] = ev;
+                onPosition?.call(idx, ev);
+                final followers = followersByFirst[idx];
+                if (followers != null) {
+                  for (final dupIdx in followers) {
+                    final dupEv = PositionEval(fens[dupIdx], lines);
+                    results[dupIdx] = dupEv;
+                    onPosition?.call(dupIdx, dupEv);
+                  }
+                }
+              }
+            }
+          }(),
+      ]);
+
+      if (checkCancelled()) throw StateError('analysis cancelled');
+
+      // Resolve forced moves right-to-left so consecutive forced sequences chain cleanly.
+      for (var k = forcedIndices.length - 1; k >= 0; k--) {
+        final j = forcedIndices[k];
+        final childPos = positions[j + 1];
+        results[j] = deriveForcedEval(
+          fens[j],
+          allLegalUcis[j].first,
+          results[j + 1]!,
+          childCheckmate: childPos.isCheckmate,
+          childDraw: childPos.isStalemate || childPos.isInsufficientMaterial,
+        );
+      }
+      for (final j in forcedIndices) {
+        onPosition?.call(j, results[j]!);
+      }
+      for (final j in terminalIndices) {
+        onPosition?.call(j, results[j]!);
       }
 
       if (twoPass) {
+        final candidates = <(int idx, EngineLine pv1, List<String> others)>[];
         Square? prevTo;
         for (var i = 0; i < fens.length - 1; i++) {
-          if (isCancelled || (cancelled?.call() ?? false)) throw StateError('analysis cancelled');
           final played = _playedMove(positions[i], positions[i + 1]);
           final isRecapture = played != null && played.isCapture && prevTo != null && played.to == prevTo;
           prevTo = played?.to;
@@ -325,24 +337,41 @@ Future<List<PositionEval>> analyzePositions(
             continue;
           }
           final others = [for (final u in allLegalUcis[i]) if (u != pv1.uci) u];
-          if (others.isEmpty) continue;
-          final lines2 = await runSearch(
-            fens[i],
-            'go depth $_pv2Depth nodes $_pv2Nodes movetime $_maxMs searchmoves ${others.join(' ')}',
-          );
-          if (lines2.isNotEmpty) {
-            results[i] = PositionEval(fens[i], [pv1, lines2.first]);
-          }
+          if (others.isNotEmpty) candidates.add((i, pv1, others));
+        }
+
+        if (candidates.isNotEmpty) {
+          var nextCand = 0;
+          final p2Workers = min(activePool.workerCount, candidates.length);
+          await Future.wait([
+            for (var w = 0; w < p2Workers; w++)
+              () async {
+                while (!checkCancelled()) {
+                  if (nextCand >= candidates.length) break;
+                  final (idx, pv1, others) = candidates[nextCand++];
+                  final lines2 = await activePool.search(
+                    w,
+                    fens[idx],
+                    depth: _pv2Depth,
+                    nodes: _pv2Nodes,
+                    movetimeMs: _maxMs,
+                    multiPv: 1,
+                    searchmoves: others,
+                  );
+                  if (checkCancelled()) break;
+                  if (lines2.isNotEmpty) {
+                    results[idx] = PositionEval(fens[idx], [pv1, lines2.first]);
+                  }
+                }
+              }(),
+          ]);
         }
       }
 
+      if (checkCancelled()) throw StateError('analysis cancelled');
       return [for (final r in results) r!];
     } finally {
       active = false;
-      await sub.cancel();
     }
-  } finally {
-    active = false;
-    await sf.dispose();
-  }
+  });
 }
