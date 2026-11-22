@@ -91,3 +91,6 @@ def test_sacrifice_detection():
     pinned_game = "e4 e5 Nf3 Nc6 Bc4 Nf6 d3 Bc5 c3 O-O b4 Bb6 O-O a5 b5 Ne7 Nxe5 d6 Nf3 Bg4 h3 Bh5 Bg5 Ng6 Nbd2 h6 Bxf6 Qxf6 e5 Nxe5 Qb3 Nxf3+ Nxf3 Bxf3 gxf3 Qxf3 Bd5"
     b = board_after(pinned_game)
     assert not is_sacrifice(b, b.parse_san("Qg3+"))
+    # Pawn promotion into a recapture (e8=Q+ Rxe8 Rxe8) wins a rook for a pawn, not a sacrifice
+    b = chess.Board("r5k1/4Pppp/8/8/8/8/5PPP/4R1K1 w - - 0 1")
+    assert not is_sacrifice(b, b.parse_san("e8=Q+"))

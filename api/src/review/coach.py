@@ -66,6 +66,18 @@ def _move_label(m: dict) -> str:
 # Moves and squares as they appear in text: Nf6, exd5, O-O, e4 (a pawn push reads as a square).
 _TOKEN = re.compile(r"O-O(?:-O)?|\b(?:[KQRBN][a-h]?[1-8]?x?[a-h][1-8]|[a-h]x[a-h][1-8]|[a-h][1-8])(?:=[QRBN])?[+#]?")
 _SQUARE = re.compile(r"[a-h][1-8]")
+_URL = re.compile(r"https?://|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|dev|co|gg|xyz|me|ru|cn)\b", re.I)
+MAX_NAME = 40
+
+
+def _safe_name(raw: str | None, default: str) -> str:
+    """Single-line, bounded player name safe to place in an LLM prompt."""
+    if not raw:
+        return default
+    clean = " ".join(ch for ch in raw.replace("\r", " ").replace("\n", " ").split() if ch)
+    if not clean or len(clean) > MAX_NAME or _URL.search(clean):
+        return default
+    return clean
 
 
 def _sentence(fact: str) -> str:
@@ -88,6 +100,8 @@ def _line_sans(fen: str | None, pv: list[str] | None, n: int = 6) -> list[str]:
 
 def _grounded(comment: str, m: dict, report: dict) -> bool:
     """True if every move and square the comment names comes from this move's facts or engine lines."""
+    if "\n" in comment or "\r" in comment or _URL.search(comment):
+        return False
     by_ply = {x["ply"]: x for x in report["moves"]}
     prev = by_ply.get(m["ply"] - 1)
     before_fen = prev["fen"] if prev and prev.get("fen") else report["headers"].get("FEN", chess.STARTING_FEN)
@@ -98,7 +112,8 @@ def _grounded(comment: str, m: dict, report: dict) -> bool:
     ucis += (m.get("bestPv") or [])[:6] + (nxt.get("bestPv") or [])[:6]
     moves = {t.rstrip("+#") for text in texts for t in _TOKEN.findall(text)}
     squares = {sq for text in texts + ucis for sq in _SQUARE.findall(text)}
-    for name in filter(None, (report["headers"].get("White"), report["headers"].get("Black"))):
+    for side in ("White", "Black"):
+        name = _safe_name(report["headers"].get(side), side)
         comment = re.sub(rf"(?<!\w){re.escape(name)}(?!\w)", " ", comment)  # a name like "Kd4" isn't a move
     for token in _TOKEN.findall(comment):
         token = token.rstrip("+#")
@@ -117,10 +132,11 @@ def fallback(m: dict) -> str:
 
 def build_messages(report: dict, moves: list[dict]) -> list[dict]:
     h = report["headers"]
-    lines = [f"Game: {h.get('White', 'White')} (White) vs {h.get('Black', 'Black')} (Black). Opening: {report.get('opening') or 'unknown'}."]
+    white, black = _safe_name(h.get("White"), "White"), _safe_name(h.get("Black"), "Black")
+    lines = [f"Game: {white} (White) vs {black} (Black). Opening: {report.get('opening') or 'unknown'}."]
     for m in moves:
         best = m["alternatives"][0]["san"] if m.get("alternatives") else None
-        player = h.get(m["color"].capitalize()) or m["color"].capitalize()
+        player = white if m["color"] == "white" else black
         line = (
             f"[id {m['ply']}] {player} ({m['color']}) played {_move_label(m)}, rated {m['badge']}. "
             f"Their winning chances went from {m['wBefore']:.0f}% to {m['wAfter']:.0f}%."

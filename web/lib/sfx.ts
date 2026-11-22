@@ -11,7 +11,7 @@ const FILES: Record<Sound, { src: string; volume: number }> = {
 
 const cache = new Map<Sound, HTMLAudioElement>();
 
-function play(sound: Sound, delayMs = 0) {
+function play(sound: Sound) {
   const { src, volume } = FILES[sound];
   let el = cache.get(sound);
   if (!el) {
@@ -19,13 +19,9 @@ function play(sound: Sound, delayMs = 0) {
     el.volume = volume;
     cache.set(sound, el);
   }
-  const start = () => {
-    el.currentTime = 0;
-    // Browsers reject play() until the page has had a user gesture; the toggle click is that gesture.
-    el.play().catch(() => {});
-  };
-  if (delayMs) setTimeout(start, delayMs);
-  else start();
+  el.currentTime = 0;
+  // Browsers reject play() until the page has had a user gesture; the toggle click is that gesture.
+  el.play().catch(() => {});
 }
 
 /** Load every file now (on the toggle click) so the first move doesn't play late. */

@@ -63,7 +63,7 @@ export function gist(text: string | null | undefined): string | null {
 export function personalize(text: string, you: string | null): string {
   if (!you) return text;
   const name = you.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return text.replace(new RegExp(`${name}['’]s\\b`, "g"), "your").replace(/(^|[.!?]\s+)your/g, "$1Your");
+  return text.replace(new RegExp(`(?<!\\w)${name}['’]s\\b`, "g"), "your").replace(/(^|[.!?]\s+)your/g, "$1Your");
 }
 
 /** Errors with an engine alternative can be retried on the board. */

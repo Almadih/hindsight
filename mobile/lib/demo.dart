@@ -7,7 +7,7 @@ import 'models.dart';
 import 'screens/review_summary.dart';
 
 /// The demo (Morphy's Opera Game, Paris 1858) ships pre-analyzed, so it opens instantly and offline.
-/// The bundled report is also stored in the shared cache (hash 489b29f2…), so its share link works.
+/// Hash matches ANALYSIS_VERSION = "7" (a720b689…).
 /// Regenerate after an API ANALYSIS_VERSION bump: analyze the game once and save `/api/review/{hash}` here.
 const demoReportAsset = 'assets/demo/report.json';
 const _startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';

@@ -4,7 +4,17 @@ import asyncio
 import pathlib
 import sqlite3
 
-from review.store import DAY, PER_DAY, PER_MINUTE, allow_analysis, get_review, player_reviews, put_review, reviews_last_day, stored_accuracies
+from review.store import (
+    DAY,
+    PER_DAY,
+    PER_MINUTE,
+    allow_analysis,
+    claim_ai_slot,
+    get_review,
+    player_reviews,
+    put_review,
+    stored_accuracies,
+)
 
 
 class FakeD1:
@@ -67,21 +77,24 @@ def test_per_day_limit_and_pruning():
     assert db.count("1.1.1.1") <= PER_DAY  # rows older than a day are deleted
 
 
-def add_review(db, h, white, black, created, wa=90.0, ba=70.0):
+def add_review(db, h, white, black, created, wa=90.0, ba=70.0, platform="chesscom"):
     db.conn.execute(
-        "INSERT INTO analyzed_games (game_hash, white_username, black_username, white_accuracy, black_accuracy, pgn, report_json, created_at)"
-        " VALUES (?, ?, ?, ?, ?, '', '{}', ?)",
-        (h, white, black, wa, ba, created),
+        "INSERT INTO analyzed_games (game_hash, platform, white_username, black_username, white_accuracy, black_accuracy, pgn, report_json, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, '', '{}', ?)",
+        (h, platform, white, black, wa, ba, created),
     )
 
 
-def test_player_reviews_case_insensitive_newest_first():
+def test_player_reviews_case_insensitive_newest_first_and_platform_scoped():
     db = FakeD1()
-    add_review(db, "a", "Hikaru", "x", "2026-10-01 10:00:00")
-    add_review(db, "b", "y", "hikaru", "2026-10-03 10:00:00")
-    add_review(db, "c", "y", "z", "2026-10-04 10:00:00")
-    rows = asyncio.run(player_reviews(db, "HIKARU"))
+    add_review(db, "a", "Hikaru", "x", "2026-10-01 10:00:00", platform="chesscom")
+    add_review(db, "b", "y", "hikaru", "2026-10-03 10:00:00", platform="chesscom")
+    add_review(db, "c", "y", "z", "2026-10-04 10:00:00", platform="chesscom")
+    add_review(db, "d", "Hikaru", "x", "2026-10-05 10:00:00", platform="lichess")
+    add_review(db, "e", "Hikaru", "x", "2026-10-06 10:00:00", platform="custom")
+    rows = asyncio.run(player_reviews(db, "chesscom", "HIKARU"))
     assert [r["game_hash"] for r in rows] == ["b", "a"]
+    assert [r["game_hash"] for r in asyncio.run(player_reviews(db, "lichess", "HIKARU"))] == ["d"]
 
 
 def test_stored_accuracies_only_known_hashes():
@@ -91,10 +104,18 @@ def test_stored_accuracies_only_known_hashes():
     assert asyncio.run(stored_accuracies(db, [])) == {}
 
 
-def test_put_get_review_and_reviews_last_day():
+def test_put_get_review_and_claim_ai_slot():
     db = FakeD1()
     assert asyncio.run(get_review(db, "h1")) is None
-    assert asyncio.run(reviews_last_day(db)) == 0
+    assert asyncio.run(claim_ai_slot(db, "h1", 1000, cap=2)) is True
+    # Duplicate claim for the same game hash is rejected immediately (no double AI call).
+    assert asyncio.run(claim_ai_slot(db, "h1", 1000, cap=2)) is False
+    assert asyncio.run(claim_ai_slot(db, "h2", 1001, cap=2)) is True
+    # Daily cap reached.
+    assert asyncio.run(claim_ai_slot(db, "h3", 1002, cap=2)) is False
+    # After 24h, old slots expire and are pruned.
+    assert asyncio.run(claim_ai_slot(db, "h3", 1000 + DAY + 1, cap=2, force_prune=True)) is True
+
     report = {
         "hash": "h1",
         "headers": {"Site": "https://lichess.org/abc", "White": "Alice", "Black": "Bob", "WhiteElo": "1500", "BlackElo": "?"},
@@ -107,4 +128,3 @@ def test_put_get_review_and_reviews_last_day():
     asyncio.run(put_review(db, {**report, "accuracy": {"white": 10.0, "black": 10.0}}, "1. d4 *"))
     got = asyncio.run(get_review(db, "h1"))
     assert got is not None and got["accuracy"]["white"] == 91.2
-    assert asyncio.run(reviews_last_day(db)) == 1

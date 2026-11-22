@@ -33,13 +33,14 @@ class _HindsightAppState extends State<HindsightApp> {
   @override
   void initState() {
     super.initState();
-    // The stream also delivers the link that launched the app.
-    _sub = AppLinks().uriLinkStream.listen(_open);
     // Text shared into the app (MainActivity): at launch via initialText, while running via "shared".
     _share.setMethodCallHandler((call) async {
       if (call.method == 'shared') _openPgn(call.arguments as String);
     });
+    // Wait for the first frame so navKey.currentContext is mounted before cold-start links or shares arrive.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      _sub = AppLinks().uriLinkStream.listen(_open);
       final text = await _share.invokeMethod<String>('initialText');
       if (text != null) _openPgn(text);
     });

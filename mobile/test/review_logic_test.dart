@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dartchess/dartchess.dart' as dc;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hindsight/models.dart';
 import 'package:hindsight/review_logic.dart';
@@ -67,7 +68,18 @@ void main() {
 
   test('personalize turns the player name into "your"', () {
     expect(personalize("Hikaru's Bxb3+ wins. Then Hikaru's rook falls.", 'Hikaru'), 'Your Bxb3+ wins. Then your rook falls.');
+    expect(personalize("Brian's Nf5 forks.", 'an'), "Brian's Nf5 forks.");
     expect(personalize('Play on', null), 'Play on');
+  });
+
+  test('standardUci normalizes king-onto-own-rook castling to standard UCI', () {
+    final pos = positionOf('r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1')!;
+    final normShort = pos.normalizeMove(dc.NormalMove.fromUci('e1h1'));
+    final normLong = pos.normalizeMove(dc.NormalMove.fromUci('e1a1'));
+    expect(standardUci(pos, normShort), 'e1g1');
+    expect(standardUci(pos, normLong), 'e1c1');
+    final regular = pos.normalizeMove(dc.NormalMove.fromUci('e1e2'));
+    expect(standardUci(pos, regular), 'e1e2');
   });
 
   test('mySide and decidingMoments', () {

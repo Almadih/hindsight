@@ -25,7 +25,8 @@ from review.store import PER_MINUTE  # noqa: E402
 from test_analyze import OPERA, synthetic_evals  # noqa: E402
 from test_store import FakeD1  # noqa: E402
 
-MINI_PGN = '[White "Alice"]\n[Black "Bob"]\n[Result "1-0"]\n\n1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0'
+MINI_PGN = '[Site "https://lichess.org/mini"]\n[White "Alice"]\n[Black "Bob"]\n[Result "1-0"]\n\n1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0'
+CUSTOM_PGN = '[Site "Custom"]\n[White "Alice"]\n[Black "Bob"]\n[Result "0-1"]\n\n1. f3 e5 2. g4 Qh4# 0-1'
 
 
 class FakeKV:
@@ -121,9 +122,41 @@ def test_player_renamed_account_and_cache_invalidation(monkeypatch):
     # Neither player name in `games[0]` matches "Alice", so reviewed must stay None (not Opponent's accuracy).
     profile = asyncio.run(entry.player("lichess", "Alice", env=env))
     assert profile["games"][0]["reviewed"] is None
-    assert "player_summary:alice" in env.CACHE.data
+    assert "player_summary:lichess:alice" in env.CACHE.data
 
-    # Analyzing a game with White="Alice" invalidates Alice's cached player summary.
+    # Custom PGN with White="Alice" does not invalidate or pollute Lichess player history.
+    custom_evals = [PositionEval(**e) for e in synthetic_evals(CUSTOM_PGN)]
+    asyncio.run(entry.analyze_game(AnalyzeRequest(pgn=CUSTOM_PGN, evals=custom_evals), _req(), env=env))
+    assert "player_summary:lichess:alice" in env.CACHE.data
+
+    # Analyzing a Lichess game with White="Alice" invalidates Alice's Lichess cached player summary.
     mini_evals = [PositionEval(**e) for e in synthetic_evals(MINI_PGN)]
     asyncio.run(entry.analyze_game(AnalyzeRequest(pgn=MINI_PGN, evals=mini_evals), _req(), env=env))
-    assert "player_summary:alice" not in env.CACHE.data
+    assert "player_summary:lichess:alice" not in env.CACHE.data
+
+
+def test_games_skips_hashing_and_player_hashes_lazily(monkeypatch):
+    env = _env()
+    raw = [
+        {
+            "id": "1",
+            "url": "https://lichess.org/1",
+            "pgn": MINI_PGN,
+            "white": {"name": "Alice", "rating": 1500},
+            "black": {"name": "Bob", "rating": 1500},
+            "result": "1-0",
+            "timeClass": "blitz",
+            "endTime": 1000,
+        }
+    ]
+
+    async def fake_fetch_games(fetch_fn, platform, username):
+        return [dict(g) for g in raw]
+
+    monkeypatch.setattr(entry, "fetch_games", fake_fetch_games)
+    res = asyncio.run(entry.games("lichess", "Alice", env=env))
+    assert "hash" not in res["games"][0]
+
+    profile = asyncio.run(entry.player("lichess", "Alice", env=env))
+    assert profile["games"][0]["hash"] == parse_game(MINI_PGN).hash
+    assert json.loads(env.CACHE.data["games:lichess:alice"])[0]["hash"] == parse_game(MINI_PGN).hash

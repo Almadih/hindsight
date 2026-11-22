@@ -1,5 +1,6 @@
 // Self-check for web chess/review helpers: `node lib/followup.check.ts` (Node 24 strips the types).
 import assert from "node:assert/strict";
+import { analyzePositions, type AnalysisQuality } from "./engine/pool.ts";
 import { parseInfo } from "./engine/uci.ts";
 import { parsePgn, reportPgn, START_FEN } from "./pgn.ts";
 import { capturedPieces, decidingMoments, followUpLine, isForced, isGoodRetry, keyMoments, personalize, whiteWinPct } from "./review.ts";
@@ -34,6 +35,7 @@ assert.deepEqual(followUpLine(bd2, pv.slice(0, 5)).sans, ["exd5", "Nxd5", "O-O"]
 // personalize: the coach's "Name's" becomes "your" when Name is you, capitalised at a sentence start.
 assert.equal(personalize("Almadih_desu2's Bd2 allows Bxc3. It hangs Almadih_desu2's knight.", "Almadih_desu2"), "Your Bd2 allows Bxc3. It hangs your knight.");
 assert.equal(personalize("Count (Isouard)'s move.", "Count (Isouard)"), "Your move.");
+assert.equal(personalize("Brian's Nf5 forks the queen.", "an"), "Brian's Nf5 forks the queen.");
 assert.equal(personalize("Hikaru's Bxb3+ wins.", null), "Hikaru's Bxb3+ wins.");
 
 // parsePgn and reportPgn: round-trip standard and custom-FEN games cleanly.
@@ -75,5 +77,68 @@ assert.equal(isGoodRetry(sampleMoves[1] as ReviewMove, "a7a6"), false);
 assert.equal(isForced("7k/8/8/8/8/8/6q1/7K w - - 0 1"), true);
 assert.equal(isForced("7k/P7/8/8/8/8/5q2/7K w - - 0 1"), false);
 assert.equal(isForced(START_FEN), false);
+
+// Worker pool: out-of-order completion, early mate stop, invalid quality fallback, and abort cleanup.
+{
+  const savedWorker = globalThis.Worker;
+  const sent: string[][] = [];
+  let terminated = 0;
+
+  class FakeWorker {
+    onmessage: ((e: { data: string }) => void) | null = null;
+    onerror: ((e: { message: string }) => void) | null = null;
+    private log: string[] = [];
+    private currentFen = "";
+    constructor() {
+      sent.push(this.log);
+    }
+    postMessage(cmd: string) {
+      this.log.push(cmd);
+      const emit = (data: string, ms = 0) => setTimeout(() => this.onmessage?.({ data }), ms);
+      if (cmd === "uci") emit("uciok");
+      else if (cmd === "isready") emit("readyok");
+      else if (cmd.startsWith("position fen ")) this.currentFen = cmd.slice("position fen ".length);
+      else if (cmd.startsWith("go ")) {
+        assert.ok(cmd.includes("depth 16"), `expected fallback depth 16, got: ${cmd}`);
+        if (this.currentFen === "fen-slow") {
+          emit("info depth 16 multipv 1 score cp 25 pv e2e4 e7e5", 30);
+          emit("bestmove e2e4", 35);
+        } else if (this.currentFen === "fen-mate") {
+          emit("info depth 4 multipv 1 score mate 2 pv h5f7", 5);
+        } else {
+          // Hang until aborted in the abort test.
+        }
+      } else if (cmd === "stop") {
+        emit("bestmove h5f7");
+      }
+    }
+    terminate() {
+      terminated++;
+    }
+  }
+
+  globalThis.Worker = FakeWorker as unknown as typeof Worker;
+  try {
+    const order: number[] = [];
+    const res = await analyzePositions(["fen-slow", "fen-mate"], {
+      concurrency: 2,
+      quality: "bogus" as AnalysisQuality,
+      onPosition: (i) => order.push(i),
+    });
+    assert.deepEqual(order, [1, 0]); // mate position finishes before slow position
+    assert.equal(res[0].lines[0].cp, 25);
+    assert.equal(res[1].lines[0].mate, 2);
+    assert.ok(sent.some((cmds) => cmds.includes("stop"))); // early mate stop triggered
+    assert.equal(terminated, 2);
+
+    const ac = new AbortController();
+    const p = analyzePositions(["fen-hang"], { concurrency: 1, signal: ac.signal });
+    setTimeout(() => ac.abort(new Error("cancelled")), 15);
+    await assert.rejects(p, /cancelled/);
+    assert.equal(terminated, 3);
+  } finally {
+    globalThis.Worker = savedWorker;
+  }
+}
 
 console.log("followUpLine ok");

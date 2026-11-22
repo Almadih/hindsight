@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { AnalysisLive } from "@/components/AnalysisLive";
 import { Review } from "@/components/Review";
 import { analyzeGame, cachedReview, getReview } from "@/lib/api";
-import { analyzePositions, type AnalysisQuality, type PositionEval } from "@/lib/engine/pool";
+import { analyzePositions, readQuality, type PositionEval } from "@/lib/engine/pool";
 import { parsePgn, reportPgn, START_FEN } from "@/lib/pgn";
 import type { Report } from "@/lib/types";
 
@@ -31,11 +31,16 @@ export default function ReviewPage() {
           const report = await getReview(hash);
           if (!report) throw new Error("This review isn't available. Pick a game or paste a PGN.");
           // Keep the game in this tab so "Re-analyze in my browser" works for linked reviews too.
-          sessionStorage.setItem("pgn", reportPgn(report.headers, report.moves.map((m) => m.san)));
+          try {
+            sessionStorage.setItem("pgn", reportPgn(report.headers, report.moves.map((m) => m.san)));
+          } catch {}
           return setState({ stage: "done", report, startFen: report.headers.FEN ?? START_FEN, shared: true, linkable: true });
         }
 
-        const input = sessionStorage.getItem("pgn");
+        let input: string | null = null;
+        try {
+          input = sessionStorage.getItem("pgn");
+        } catch {}
         if (!input) throw new Error("No game to review yet. Pick a game or paste a PGN first.");
         const { pgn, fens, sans, headers } = parsePgn(input);
         const game = { fens, sans, headers };
@@ -45,7 +50,7 @@ export default function ReviewPage() {
         if (ctrl.signal.aborted) return;
         const live: (PositionEval | undefined)[] = new Array(fens.length);
         setState({ stage: "engine", game, evals: [...live] });
-        const quality = ((typeof window !== "undefined" ? localStorage.getItem("hindsight_quality") : null) as AnalysisQuality) || "standard";
+        const quality = readQuality();
         const evals = await analyzePositions(fens, {
           signal: ctrl.signal,
           quality,

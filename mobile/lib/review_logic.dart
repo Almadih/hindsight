@@ -57,6 +57,16 @@ bool isGoodRetry(ReviewMove m, String uci) {
   return alt != null && m.alternatives.first.w - alt.w < 2;
 }
 
+/// Converts king-onto-own-rook castling back to standard two-square UCI (e1g1/e1c1/e8g8/e8c8)
+/// so Retry matches Stockfish's UCI notation regardless of how the user dragged the king.
+String standardUci(dc.Position pos, dc.Move norm) {
+  if (norm is dc.NormalMove && pos.board.roleAt(norm.from) == dc.Role.king && pos.board.sideAt(norm.to) == pos.turn) {
+    final toFile = norm.to.file > norm.from.file ? dc.File.g : dc.File.c;
+    return dc.NormalMove(from: norm.from, to: dc.Square.fromCoords(toFile, norm.from.rank)).uci;
+  }
+  return norm.uci;
+}
+
 /// White's win% for the eval bar and graph, same curve as the API.
 double whiteWinPct(WhiteEval e) {
   final mate = e.mateWhite;
@@ -215,7 +225,7 @@ String? gist(String? text) {
 String personalize(String text, String? you) {
   if (you == null) return text;
   return text
-      .replaceAll(RegExp("${RegExp.escape(you)}['’]s\\b"), 'your')
+      .replaceAll(RegExp("(?<!\\w)${RegExp.escape(you)}['’]s\\b"), 'your')
       .replaceAllMapped(RegExp(r'(^|[.!?]\s+)your'), (m) => '${m[1]}Your');
 }
 

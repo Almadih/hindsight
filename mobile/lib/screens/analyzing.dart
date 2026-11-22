@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../api.dart';
@@ -31,6 +33,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   PositionEval? _ev; // the last evaluated position
   bool _classifying = false, _flipped = false;
   Object? _error;
+  Completer<void> _cancel = Completer<void>();
 
   @override
   void initState() {
@@ -38,7 +41,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     _run();
   }
 
+  @override
+  void dispose() {
+    if (!_cancel.isCompleted) _cancel.complete();
+    super.dispose();
+  }
+
   Future<void> _run() async {
+    final cancel = _cancel.future;
     try {
       final game = parsePgn(widget.pgn);
       final fens = game.fens;
@@ -63,6 +73,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           }
         },
         cancelled: () => !mounted,
+        cancel: cancel,
       );
       if (!mounted) return;
       setState(() => _classifying = true);
@@ -75,6 +86,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   }
 
   void _retry() {
+    if (!_cancel.isCompleted) _cancel.complete();
+    _cancel = Completer<void>();
     setState(() {
       _error = null;
       _fens = const [];

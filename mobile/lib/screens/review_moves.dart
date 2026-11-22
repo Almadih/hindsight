@@ -8,13 +8,14 @@ import '../models.dart';
 import '../prefs.dart' as prefs;
 import '../review_logic.dart';
 import '../theme.dart';
-import '../widgets/badge_icon.dart';
 import '../widgets/board.dart';
 import '../widgets/coach_bubble.dart';
 import '../widgets/eval_bar.dart';
 import '../widgets/green_button.dart';
+import '../widgets/move_strips.dart';
 import '../widgets/player_bar.dart';
 import '../widgets/review_menu.dart';
+import '../widgets/review_recap.dart';
 import '../widgets/sfx.dart';
 
 const _lineStepMs = 700;
@@ -180,11 +181,12 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
     ); // standard castling notation -> king takes rook
     if (!pos.isLegal(norm)) return;
     final (_, san) = pos.makeSan(norm);
-    final ok = isGoodRetry(m, mv.uci);
+    final uci = standardUci(pos, norm);
+    final ok = isGoodRetry(m, uci);
     setState(() {
       _selected = null;
       if (ok) _solved.add(_ply);
-      _fb = (ok: ok, san: san, uci: mv.uci);
+      _fb = (ok: ok, san: san, uci: uci);
     });
     playMoveSound(san);
   }
@@ -228,205 +230,6 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _btn(
-    String label,
-    VoidCallback? onTap, {
-    bool primary = false,
-    IconData? icon,
-    bool trailing = false,
-  }) {
-    final text = Text(label, textAlign: TextAlign.center);
-    final child = icon == null
-        ? text
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!trailing) Icon(icon, size: 20),
-              Flexible(child: text),
-              if (trailing) Icon(icon, size: 20),
-            ],
-          );
-    return primary
-        ? FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: kGreen,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: onTap,
-            child: child,
-          )
-        : FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: kCard,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: onTap,
-            child: child,
-          );
-  }
-
-  /// Move numbers for a line starting at [fen]: "19... Rxg2+ 20. Kxg2 Ne5".
-  List<String> _numbered(String fen, List<String> sans) {
-    final parts = fen.split(' ');
-    var n = int.tryParse(parts.elementAtOrNull(5) ?? '') ?? 1;
-    var white = parts[1] == 'w';
-    final out = <String>[];
-    for (var i = 0; i < sans.length; i++) {
-      out.add(
-        white
-            ? '$n. ${sans[i]}'
-            : i == 0
-            ? '$n... ${sans[i]}'
-            : sans[i],
-      );
-      if (!white) n++;
-      white = !white;
-    }
-    return out;
-  }
-
-  Widget _strip() {
-    var n =
-        int.tryParse(widget.startFen.split(' ').elementAtOrNull(5) ?? '') ?? 1;
-    final items = <Widget>[];
-    for (var i = 0; i < _moves.length; i++) {
-      final m = _moves[i];
-      if (m.color == Side.white || i == 0) {
-        items.add(
-          Padding(
-            padding: const EdgeInsets.only(left: 14, right: 6),
-            child: Text(
-              m.color == Side.white ? '$n.' : '$n...',
-              style: const TextStyle(fontSize: 20, color: kMuted),
-            ),
-          ),
-        );
-      }
-      final num = m.color == Side.white ? '$n.' : '$n…';
-      if (m.color == Side.black) n++;
-      final cur = i + 1 == _ply;
-      items.add(
-        Semantics(
-          button: true,
-          selected: cur,
-          label: '$num ${m.san}, ${badgeMeta[m.badge]!.label}',
-          excludeSemantics: true,
-          child: InkWell(
-          key: cur ? _curKey : null,
-          onTap: () => _go(i + 1),
-          child: Container(
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 48),
-            alignment: Alignment.center,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: cur
-                ? const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: kMuted, width: 3),
-                    ),
-                  )
-                : null,
-            child: Text(
-              m.san,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: cur ? Colors.white : kMuted,
-              ),
-            ),
-          ),
-        ),
-        ),
-      );
-    }
-    return Row(
-      children: [
-        IconButton(
-          iconSize: 36,
-          tooltip: 'Previous move',
-          onPressed: _ply > 0 ? () => _go(_ply - 1) : null,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: items),
-          ),
-        ),
-        IconButton(
-          iconSize: 36,
-          tooltip: 'Next move',
-          onPressed: _ply < _moves.length ? () => _go(_ply + 1) : null,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
-    );
-  }
-
-  Widget _lineStrip() {
-    final labels = _numbered(_lineFens[0], _lineSans);
-    return Row(
-      children: [
-        IconButton(
-          iconSize: 32,
-          tooltip: 'Previous move',
-          onPressed: _lineIdx > 0 ? () => _lineStep(_lineIdx - 1) : null,
-          icon: const Icon(Icons.chevron_left),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (var i = 0; i < labels.length; i++)
-                  Semantics(
-                    button: true,
-                    selected: i + 1 == _lineIdx,
-                    label: labels[i],
-                    excludeSemantics: true,
-                    child: InkWell(
-                    onTap: () => _lineStep(i + 1),
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 48),
-                      alignment: Alignment.center,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: i + 1 == _lineIdx
-                            ? kMoveCurrent
-                            : null,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        labels[i],
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: i < _lineIdx ? Colors.white : kMuted,
-                        ),
-                      ),
-                    ),
-                  ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        IconButton(
-          iconSize: 32,
-          tooltip: 'Next move',
-          onPressed: _lineIdx < _lineSans.length
-              ? () => _lineStep(_lineIdx + 1)
-              : null,
-          icon: const Icon(Icons.chevron_right),
-        ),
-      ],
     );
   }
 
@@ -555,68 +358,6 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
     );
   }
 
-  Widget _recap() {
-    final h = widget.report.headers;
-    final names = {
-      Side.white: h['White'] ?? 'White',
-      Side.black: h['Black'] ?? 'Black',
-    };
-    final you = _me == null ? null : names[_me];
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text(
-          'That’s what decided it',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          takeaway(widget.report, names, _me),
-          style: const TextStyle(color: kMuted, fontSize: 16),
-        ),
-        const SizedBox(height: 12),
-        for (final m in _moments.moments)
-          Card(
-            color: kCard,
-            child: ListTile(
-              onTap: () => _go(m.ply),
-              leading: BadgeIcon(m.badge, size: 28),
-              title: Text(
-                '${(m.ply / 2).ceil()}.${m.color == Side.black ? '..' : ''} ${m.san} ${badgeMeta[m.badge]!.phrase}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: badgeMeta[m.badge]!.color,
-                ),
-              ),
-              subtitle: m.coach == null
-                  ? null
-                  : Text(gist(personalize(m.coach!, you)) ?? ''),
-              trailing: const Icon(Icons.chevron_right),
-            ),
-          ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _btn(
-                'Back to summary',
-                () => Navigator.of(context).pop(),
-                primary: true,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _btn(
-                'Keep stepping through the game',
-                () => _go(_ply + 1),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final m = _m;
@@ -685,7 +426,14 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
         ],
       ),
       body: _mode == _Mode.end
-          ? _recap()
+          ? ReviewRecap(
+              report: widget.report,
+              me: _me,
+              moments: _moments.moments,
+              onJump: _go,
+              onSummary: () => Navigator.of(context).pop(),
+              onStep: () => _go(_ply + 1),
+            )
           : LayoutBuilder(
               builder: (_, c) {
                 final wide = c.maxWidth > c.maxHeight;
@@ -748,7 +496,20 @@ class _ReviewMovesScreenState extends State<ReviewMovesScreen> {
                   top: false,
                   child: Column(
                     children: [
-                      _mode == _Mode.line ? _lineStrip() : _strip(),
+                      _mode == _Mode.line
+                          ? LineMoveStrip(
+                              startFen: _lineFens[0],
+                              sans: _lineSans,
+                              index: _lineIdx,
+                              onStep: _lineStep,
+                            )
+                          : GameMoveStrip(
+                              startFen: widget.startFen,
+                              moves: _moves,
+                              ply: _ply,
+                              currentKey: _curKey,
+                              onSelect: _go,
+                            ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(8, 4, 12, 8),
                         child: Row(

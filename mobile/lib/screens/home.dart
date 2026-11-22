@@ -18,7 +18,7 @@ const _faq = [
   ['Is it really free?', 'Yes, with no account. You get up to 60 new reviews a day, and opening a game someone already reviewed doesn’t count.'],
   ['How do I review a Chess.com game?', 'Pick Chess.com, type your username and choose a game.'],
   ['Does it work with Lichess?', 'Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines.'],
-  ['Which engine does it use?', 'Stockfish 19, at depth 16 by default (quick 14, deep 18).'],
+  ['Which engine does it use?', 'Stockfish 19, at depth 14 by default (standard 16, deep 18).'],
 ];
 
 const _scale = [
@@ -72,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Object? _error;
   bool _loading = false;
   String _shownFor = '';
+  String _shownPlatform = '';
 
   @override
   void dispose() {
@@ -95,14 +96,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _error = null;
       _games = null;
     });
+    final platform = _platform;
     try {
-      final games = await fetchGames(_platform, u);
+      final games = await fetchGames(platform, u);
       if (!mounted) return;
       rememberMe(u);
-      lastPlatform = _platform;
+      lastPlatform = platform;
       setState(() {
         _games = games;
         _shownFor = u;
+        _shownPlatform = platform;
       });
     } catch (e) {
       if (mounted) setState(() => _error = e);
@@ -233,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 TextButton(onPressed: _paste, child: const Text('Paste PGN')),
                 if (_games != null)
                   TextButton(
-                    onPressed: () => _push(PlayerScreen(platform: _platform, username: _shownFor)),
+                    onPressed: () => _push(PlayerScreen(platform: _shownPlatform, username: _shownFor)),
                     child: const Text('Player page'),
                   ),
               ]),

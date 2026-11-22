@@ -7,7 +7,7 @@ PER_DAY = 60
 DAY = 86_400
 
 
-def _platform(headers: dict) -> str:
+def platform_of(headers: dict) -> str:
     site = headers.get("Site", "").lower()
     return "chesscom" if "chess.com" in site else "lichess" if "lichess" in site else "custom"
 
@@ -24,15 +24,15 @@ async def get_review(db, game_hash: str) -> dict | None:
     return json.loads(row["report_json"]) if row else None
 
 
-async def player_reviews(db, username: str, limit: int = 50) -> list[dict]:
-    """Stored reviews where `username` played either side, newest first (case-insensitive, NOCASE indexes)."""
+async def player_reviews(db, platform: str, username: str, limit: int = 50) -> list[dict]:
+    """Stored reviews on `platform` where `username` played either side, newest first (case-insensitive)."""
     result = await (
         db.prepare(
             "SELECT game_hash, white_username, black_username, created_at, report_json FROM analyzed_games"
-            " WHERE white_username = ?1 COLLATE NOCASE OR black_username = ?1 COLLATE NOCASE"
-            " ORDER BY created_at DESC LIMIT ?2"
+            " WHERE platform = ?1 AND (white_username = ?2 COLLATE NOCASE OR black_username = ?2 COLLATE NOCASE)"
+            " ORDER BY created_at DESC LIMIT ?3"
         )
-        .bind(username, limit)
+        .bind(platform, username, limit)
         .all()
     )
     return result["results"]
@@ -67,10 +67,20 @@ async def allow_analysis(db, ip: str, now: int, force_prune: bool = False) -> bo
     return allowed
 
 
-async def reviews_last_day(db) -> int:
-    """New shared reviews in the past 24 hours: each one cost one coach AI call."""
-    row = await db.prepare("SELECT COUNT(*) AS n FROM analyzed_games WHERE created_at > datetime('now', '-1 day')").first()
-    return row["n"] if row else 0
+async def claim_ai_slot(db, game_hash: str, now: int, cap: int, force_prune: bool = False) -> bool:
+    """Atomically claim one Workers AI call for `game_hash` if the rolling 24h cap has room."""
+    result = await (
+        db.prepare(
+            "INSERT OR IGNORE INTO ai_calls (game_hash, created_at) SELECT ?1, ?2"
+            " WHERE (SELECT COUNT(*) FROM ai_calls WHERE created_at > ?2 - ?3) < ?4"
+        )
+        .bind(game_hash, now, DAY, cap)
+        .run()
+    )
+    claimed = result["meta"]["changes"] == 1
+    if claimed and (force_prune or now % 10 == 0):
+        await db.prepare("DELETE FROM ai_calls WHERE created_at <= ?").bind(now - DAY).run()
+    return claimed
 
 
 async def put_review(db, report: dict, pgn: str) -> None:
@@ -84,7 +94,7 @@ async def put_review(db, report: dict, pgn: str) -> None:
         )
         .bind(
             report["hash"],
-            _platform(h),
+            platform_of(h),
             h.get("White"),
             h.get("Black"),
             _int(h.get("WhiteElo")),

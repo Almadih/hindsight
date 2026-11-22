@@ -99,6 +99,13 @@ def test_extreme_cp_rejected():
         Line(uci="e2e4", cp=200_000, pv=["e2e4"])
 
 
+def test_extreme_mate_rejected():
+    with pytest.raises(ValidationError):
+        Line(uci="e2e4", mate=-200_000, pv=["e2e4"])
+    with pytest.raises(ValidationError):
+        Line(uci="e2e4", mate=2000, pv=["e2e4"])
+
+
 BACK_RANK = """[FEN "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"]
 [SetUp "1"]
 

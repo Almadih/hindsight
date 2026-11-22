@@ -80,19 +80,24 @@ export default function Home() {
   const [step, setStep] = useState(0);
   const [held, setHeld] = useState(false);
   const [found, setFound] = useState<{ games: GameSummary[]; username: string; platform: Platform } | null>(null);
-  // Off by default every visit; the toggle click doubles as the gesture browsers require before audio.
-  const [sound, setSound] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return sessionStorage.getItem("sound") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Off during SSR to match static HTML; client syncs from sessionStorage without hydration mismatch.
+  const storedSound = useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        return sessionStorage.getItem("sound") === "1";
+      } catch {
+        return false;
+      }
+    },
+    () => false,
+  );
+  const [soundOverride, setSoundOverride] = useState<boolean | null>(null);
+  const sound = soundOverride ?? storedSound;
   const toggleSound = () => {
     if (!sound) primeSounds();
     const next = !sound;
-    setSound(next);
+    setSoundOverride(next);
     try {
       sessionStorage.setItem("sound", next ? "1" : "0");
     } catch {}

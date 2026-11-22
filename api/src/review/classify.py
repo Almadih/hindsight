@@ -88,28 +88,19 @@ def classify(f: MoveFacts) -> str:
 
 
 
+def _unpinned_attackers(board: chess.Board, color: chess.Color, sq: chess.Square) -> list[chess.Square]:
+    """Pieces of `color` attacking `sq` that aren't pinned away from it."""
+    return [
+        a for a in board.attackers(color, sq)
+        if not board.is_pinned(color, a) or (board.pin_mask(color, a) & chess.BB_SQUARES[sq])
+    ]
+
+
 def _attackers(board: chess.Board, attacker_color: chess.Color, sq: chess.Square) -> list[chess.Square]:
     """Pieces of attacker_color that can legally capture sq."""
     if board.turn == attacker_color:
         return [m.from_square for m in board.legal_moves if m.to_square == sq]
-    attackers = []
-    for a in board.attackers(attacker_color, sq):
-        if board.is_pinned(attacker_color, a):
-            if not (board.pin_mask(attacker_color, a) & chess.BB_SQUARES[sq]):
-                continue
-        attackers.append(a)
-    return attackers
-
-
-def _defenders(board: chess.Board, defender_color: chess.Color, sq: chess.Square) -> list[chess.Square]:
-    """Pieces of defender_color that protect sq (excluding pieces pinned away from sq)."""
-    defenders = []
-    for d in board.attackers(defender_color, sq):
-        if board.is_pinned(defender_color, d):
-            if not (board.pin_mask(defender_color, d) & chess.BB_SQUARES[sq]):
-                continue
-        defenders.append(d)
-    return defenders
+    return _unpinned_attackers(board, attacker_color, sq)
 
 
 def _hanging(board: chess.Board, sq: chess.Square) -> bool:
@@ -120,7 +111,7 @@ def _hanging(board: chess.Board, sq: chess.Square) -> bool:
     attackers = _attackers(board, not piece.color, sq)
     if not attackers:
         return False
-    defenders = _defenders(board, piece.color, sq)
+    defenders = _unpinned_attackers(board, piece.color, sq)
     if not defenders:
         return True
     return min(VALUE[board.piece_type_at(a)] for a in attackers) < VALUE[piece.piece_type]
@@ -141,7 +132,7 @@ def is_sacrifice(board: chess.Board, move: chess.Move) -> bool:
         if p.color != mover or p.piece_type in (chess.PAWN, chess.KING) or not _hanging(after, sq):
             continue
         if sq == move.to_square:
-            if VALUE[p.piece_type] > captured:
+            if not move.promotion and VALUE[p.piece_type] > captured:
                 return True
         elif sq not in hanging_before:
             return True

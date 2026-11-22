@@ -10,7 +10,15 @@ from review.analyze import AnalysisError, AnalyzeRequest, analyze, parse_game
 from review.coach import add_coach
 from review.player import summarize
 from review.fetchers import UpstreamError, fetch_games
-from review.store import allow_analysis, get_review, player_reviews, put_review, reviews_last_day, stored_accuracies
+from review.store import (
+    allow_analysis,
+    claim_ai_slot,
+    get_review,
+    platform_of,
+    player_reviews,
+    put_review,
+    stored_accuracies,
+)
 
 GAMES_TTL = 300  # seconds a fetched game list stays in KV
 # Hard ceiling on coach AI calls per rolling day; past it, reviews still work with fact-based comments.
@@ -35,7 +43,7 @@ def _game_hash(pgn: str) -> str | None:
 
 
 async def cached_games(env, platform: str, username: str) -> list[dict]:
-    """Recent games from KV or upstream, each stamped with its review hash (computed once, on a cache miss)."""
+    """Recent games from KV or upstream."""
     key = f"games:{platform}:{username.lower()}"
     if cached := await env.CACHE.get(key):
         return json.loads(cached)
@@ -43,8 +51,6 @@ async def cached_games(env, platform: str, username: str) -> list[dict]:
         result = await fetch_games(fetch, platform, username)
     except UpstreamError as e:
         raise HTTPException(e.status, str(e)) from e
-    for game in result:
-        game["hash"] = _game_hash(game["pgn"])
     await env.CACHE.put(key, json.dumps(result), {"expirationTtl": GAMES_TTL})
     return result
 
@@ -58,17 +64,21 @@ async def games(platform: Literal["chesscom", "lichess"], username: str = USERNA
 async def player(platform: Literal["chesscom", "lichess"], username: str = USERNAME, env=env):
     """Recent games (marked when already reviewed) plus the player's reviewed history and recurring mistakes."""
     recent = await cached_games(env, platform, username)
-    stored = await stored_accuracies(env.DB, [g["hash"] for g in recent if g.get("hash")])
     me = username.lower()
+    if any("hash" not in g for g in recent):
+        for g in recent:
+            g.setdefault("hash", _game_hash(g["pgn"]))
+        await env.CACHE.put(f"games:{platform}:{me}", json.dumps(recent), {"expirationTtl": GAMES_TTL})
+    stored = await stored_accuracies(env.DB, [g["hash"] for g in recent if g.get("hash")])
     for g in recent:
         acc = stored.get(g.get("hash"))
         side = "white" if g["white"]["name"].lower() == me else "black" if g["black"]["name"].lower() == me else None
         g["reviewed"] = {"accuracy": acc[side]} if acc and side else None
-    summary_key = f"player_summary:{me}"
+    summary_key = f"player_summary:{platform}:{me}"
     if cached_summary := await env.CACHE.get(summary_key):
         summary = json.loads(cached_summary)
     else:
-        summary = summarize(await player_reviews(env.DB, username), username)
+        summary = summarize(await player_reviews(env.DB, platform, username), username)
         await env.CACHE.put(summary_key, json.dumps(summary), {"expirationTtl": GAMES_TTL})
     return {"username": username, "platform": platform, "games": recent, **summary}
 
@@ -101,12 +111,14 @@ async def analyze_game(req: AnalyzeRequest, request: Request, env=env):
         # Private re-analysis: no AI spend, and the shared copy is never touched.
         await add_coach(report, None)
         return report
-    use_ai = await reviews_last_day(env.DB) < AI_DAILY_CAP
+    use_ai = await claim_ai_slot(env.DB, parsed.hash, int(time.time()), AI_DAILY_CAP)
     await add_coach(report, (lambda model, inputs: env.AI.run(model, inputs)) if use_ai else None)
     await put_review(env.DB, report, req.pgn)
-    for side_key in ("White", "Black"):
-        if name := report["headers"].get(side_key):
-            await env.CACHE.delete(f"player_summary:{name.lower()}")
+    plat = platform_of(report["headers"])
+    if plat in ("chesscom", "lichess"):
+        for side_key in ("White", "Black"):
+            if name := report["headers"].get(side_key):
+                await env.CACHE.delete(f"player_summary:{plat}:{name.lower()}")
     return report
 
 

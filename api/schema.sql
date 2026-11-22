@@ -26,6 +26,16 @@ CREATE TABLE IF NOT EXISTS analysis_requests (
 CREATE INDEX IF NOT EXISTS idx_requests_ip ON analysis_requests(ip, created_at);
 CREATE INDEX IF NOT EXISTS idx_requests_time ON analysis_requests(created_at);
 
--- Player pages look reviews up by username, case-insensitively.
+-- Player pages look reviews up by platform + username, case-insensitively.
 CREATE INDEX IF NOT EXISTS idx_white_nocase ON analyzed_games(white_username COLLATE NOCASE);
 CREATE INDEX IF NOT EXISTS idx_black_nocase ON analyzed_games(black_username COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_platform_white ON analyzed_games(platform, white_username COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_platform_black ON analyzed_games(platform, black_username COLLATE NOCASE);
+
+-- One row per Workers AI coach call, for atomic deduplication and daily cap in store.claim_ai_slot.
+CREATE TABLE IF NOT EXISTS ai_calls (
+    game_hash TEXT PRIMARY KEY,
+    created_at INTEGER NOT NULL          -- unix seconds
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_calls_time ON ai_calls(created_at);

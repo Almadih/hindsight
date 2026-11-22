@@ -1,5 +1,5 @@
-import { parseInfo, type EngineLine } from "./uci";
-import { hasWasmSimd } from "./simd";
+import { parseInfo, type EngineLine } from "./uci.ts";
+import { hasWasmSimd } from "./simd.ts";
 
 export type PositionEval = { fen: string; lines: EngineLine[] };
 
@@ -10,6 +10,17 @@ export const QUALITY_DEPTH: Record<AnalysisQuality, number> = {
   standard: 16,
   deep: 18,
 };
+
+/** Read saved analysis quality safely; falls back to "standard" if storage is blocked or invalid. */
+export function readQuality(): AnalysisQuality {
+  if (typeof window === "undefined") return "standard";
+  try {
+    const v = localStorage.getItem("hindsight_quality");
+    return v && v in QUALITY_DEPTH ? (v as AnalysisQuality) : "standard";
+  } catch {
+    return "standard";
+  }
+}
 
 const SIMD_ENGINE_URL = "/stockfish/stockfish-19-lite-single.js";
 const ASM_ENGINE_URL = "/stockfish/stockfish-19-asm.js";
@@ -110,14 +121,13 @@ export async function analyzePositions(
     quality?: AnalysisQuality;
     multiPv?: number;
     concurrency?: number;
-    onProgress?: (done: number, total: number) => void;
     /** Each position as it finishes; workers finish out of order. */
     onPosition?: (index: number, ev: PositionEval) => void;
     signal?: AbortSignal;
   } = {},
 ): Promise<PositionEval[]> {
-  const depth = opts.depth ?? (opts.quality ? QUALITY_DEPTH[opts.quality] : QUALITY_DEPTH.standard);
-  const { multiPv = 2, onProgress, onPosition, signal } = opts;
+  const depth = opts.depth ?? (opts.quality && QUALITY_DEPTH[opts.quality]) ?? QUALITY_DEPTH.standard;
+  const { multiPv = 2, onPosition, signal } = opts;
   signal?.throwIfAborted();
 
   const isSimd = await hasWasmSimd();
@@ -125,12 +135,16 @@ export async function analyzePositions(
 
   const size = opts.concurrency ?? recommendedConcurrency(fens.length);
   const engines = Array.from({ length: size }, () => new Engine(engineUrl));
-  const stop = () => engines.forEach((e) => e.terminate(signal?.reason ?? new Error("analysis stopped")));
+  let stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    engines.forEach((e) => e.terminate(signal?.reason ?? new Error("analysis stopped")));
+  };
   signal?.addEventListener("abort", stop);
 
   const results: PositionEval[] = new Array(fens.length);
   let next = 0;
-  let done = 0;
   try {
     await Promise.all(
       engines.map(async (engine) => {
@@ -139,7 +153,6 @@ export async function analyzePositions(
           const i = next++;
           results[i] = { fen: fens[i], lines: await engine.evaluate(fens[i], depth) };
           onPosition?.(i, results[i]);
-          onProgress?.(++done, fens.length);
         }
       }),
     );

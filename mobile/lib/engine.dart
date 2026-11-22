@@ -36,20 +36,29 @@ const _maxMs = 5000; // per-position backstop
 }
 
 /// Evaluates every position one after another on a single native Stockfish.
-/// Throws StateError if [cancelled] returns true.
+/// Throws StateError if [cancelled] returns true or [cancel] completes.
 Future<List<PositionEval>> analyzePositions(
   List<String> fens, {
   int depth = 16,
   int multiPv = 2, // line 2 feeds the "great" badge; line 3 only a 5 cp tie check, ~1.4-2.5x slower (analysis-speed.md)
   void Function(int index, PositionEval ev)? onPosition,
   bool Function()? cancelled,
+  Future<void>? cancel,
 }) async {
+  if (cancelled?.call() ?? false) throw StateError('analysis cancelled');
   final sf = await Stockfish.create(flavor: StockfishFlavor.light);
+  var active = true;
+  var isCancelled = false;
   try {
+    final readyok = Completer<void>();
     var bestmove = Completer<void>();
     final byPv = <int, EngineLine>{};
     var stopped = false;
     final sub = sf.stdout.listen((line) {
+      if (line == 'readyok') {
+        if (!readyok.isCompleted) readyok.complete();
+        return;
+      }
       if (line.startsWith('bestmove')) {
         if (!bestmove.isCompleted) bestmove.complete();
         return;
@@ -69,14 +78,25 @@ Future<List<PositionEval>> analyzePositions(
         sf.stdin = 'stop';
       }
     });
+    cancel?.then((_) {
+      isCancelled = true;
+      if (!active) return;
+      try {
+        sf.stdin = 'stop';
+      } catch (_) {}
+      if (!readyok.isCompleted) readyok.completeError(StateError('analysis cancelled'));
+      if (!bestmove.isCompleted) bestmove.completeError(StateError('analysis cancelled'));
+    });
     try {
       // 3 measured faster than 6 on a full game (328s vs 371s, 8-core phone): more threads only add heat.
       sf.stdin = 'setoption name Threads value ${max(1, min(3, Platform.numberOfProcessors - 1))}';
       sf.stdin = 'setoption name Hash value 64';
       sf.stdin = 'setoption name MultiPV value $multiPv';
+      sf.stdin = 'isready';
+      await readyok.future.timeout(const Duration(seconds: 10));
       final results = <PositionEval>[];
       for (var i = 0; i < fens.length; i++) {
-        if (cancelled?.call() ?? false) throw StateError('analysis cancelled');
+        if (isCancelled || (cancelled?.call() ?? false)) throw StateError('analysis cancelled');
         // Game-over positions report no PV and the API scores them itself; skip the engine — on the phone the
         // bestmove for a final checkmate after an early-stopped mate search sometimes never arrives (15 s hang).
         final pos = Chess.fromSetup(Setup.parseFen(fens[i]));
@@ -99,9 +119,11 @@ Future<List<PositionEval>> analyzePositions(
       }
       return results;
     } finally {
+      active = false;
       await sub.cancel();
     }
   } finally {
+    active = false;
     await sf.dispose();
   }
 }
