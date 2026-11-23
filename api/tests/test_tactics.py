@@ -109,3 +109,10 @@ def test_long_mates_are_not_counted():
     b = board("e4 e5 Qh5 Nc6 Bc4")
     facts = describe(b, b.parse_san("Nf6"), "blunder", "g7g6", "h5f7", None, 9)
     assert "it allows a forced mate, starting with Qxf7#" in facts
+
+
+def test_already_hanging_piece_while_in_check_not_blamed_on_evasion():
+    # White is in check from Qh4+, and Rc3 is ALREADY lost to doubled rooks (Rc8 + Rc7 vs Rc1).
+    b = board("2r1k3/2r5/8/8/7q/2R5/8/2R1K3 w - - 0 1")
+    facts = describe(b, b.parse_san("Kd1"), "blunder", "e1f1", "c7c3", None, None)
+    assert not any("leaves the rook on c3 hanging" in f for f in facts)

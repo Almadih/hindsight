@@ -2,7 +2,7 @@
 
 import chess
 
-from .classify import VALUE, is_sacrifice
+from .classify import VALUE, _threats, capture_gain as _capture_gain, is_sacrifice, see as _see
 
 KEY_BADGES = {"blunder", "miss", "mistake", "brilliant", "great"}
 GOOD_BADGES = {"brilliant", "great"}
@@ -27,30 +27,6 @@ def _piece(board: chess.Board, sq: chess.Square) -> str:
     return f"{NAME[board.piece_type_at(sq)]} on {chess.square_name(sq)}"
 
 
-def _see(board: chess.Board, sq: chess.Square) -> int:
-    """Material the side to move nets by capturing on sq, both sides then recapturing with their cheapest piece
-    while it pays. Built on legal moves, so pins and x-rays count."""
-    if board.piece_at(sq) is None:
-        return 0
-    captures = [m for m in board.legal_moves if m.to_square == sq]
-    if not captures:
-        return 0
-    first = min(captures, key=lambda m: VALUE[board.piece_type_at(m.from_square)])
-    after = board.copy(stack=False)
-    after.push(first)
-    return max(0, VALUE[board.piece_type_at(sq)] - _see(after, sq))
-
-
-def _capture_gain(board: chess.Board, move: chess.Move) -> int:
-    """Net material for the side to move from this capture once the exchanges on that square are over."""
-    target = board.piece_type_at(move.to_square)
-    if target is None:  # en passant or not a capture
-        return 0
-    after = board.copy(stack=False)
-    after.push(move)
-    return VALUE[target] - _see(after, move.to_square)
-
-
 def _wins(board: chess.Board, move: chess.Move, gain: int) -> str:
     """'the knight' when the captured piece is won outright, 'material' when the exchanges only net part of it."""
     return f"the {NAME[board.piece_type_at(move.to_square)]}" if gain >= VALUE[board.piece_type_at(move.to_square)] else "material"
@@ -63,12 +39,7 @@ def _mate(n: int) -> str:
 
 def _threatened(board: chess.Board, color: chess.Color) -> set[chess.Square]:
     """Pieces of `color` the opponent could win right now if it were their move."""
-    if board.turn == color:
-        if board.is_check():
-            return set()
-        board = board.copy(stack=False)
-        board.push(chess.Move.null())
-    return {sq for sq in _pieces(board, color) if _see(board, sq) > 0}
+    return set(_threats(board, color))
 
 
 def motifs(board: chess.Board, move: chess.Move) -> list[str]:

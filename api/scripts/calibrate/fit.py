@@ -51,9 +51,20 @@ def load():
                     "url": row["url"],
                     "side": side,
                     "rating": row["ratings"][side],
+                    "opp_rating": row["ratings"]["black" if side == "white" else "white"],
                     "theirs": row["chesscom"][side],
                     "ours": report["accuracy"][side],
-                    "losses": [0.0 if (m["badge"] in ("book", "best") or m.get("accuracy", 0) == 100.0) else max(0.0, m["wBefore"] - m["wAfter"]) for m in moves],
+                    "est_elo": report["elo"][side],
+                    "opp_acc": report["accuracy"]["black" if side == "white" else "white"],
+                    "result": (
+                        1.0
+                        if (report["headers"].get("Result") == "1-0" and side == "white")
+                        or (report["headers"].get("Result") == "0-1" and side == "black")
+                        else (0.5 if report["headers"].get("Result") == "1/2-1/2" else 0.0)
+                    ),
+                    "nonbook": sum(1 for m in moves if m["badge"] != "book"),
+                    "time_control": report["headers"].get("TimeControl"),
+                    "losses": [0.0 if (m["badge"] in ("book", "best", "great", "brilliant") or m.get("accuracy", 0) == 100.0) else max(0.0, m["wBefore"] - m["wAfter"]) for m in moves],
                     "badges": Counter(m["badge"] for m in moves),
                 }
             )
@@ -82,22 +93,33 @@ def main():
         sub = [r for r in rows if band_label(r["rating"]) == label]
         print(f"  {label:>10}: n={len(sub):2d}  {errors(sub, cur_k, cur_w)[0]:+5.1f} → {errors(sub, *best)[0]:+5.1f}")
 
-    # Rating curve: fit elo's logistic to (fitted accuracy, real rating). Single games are noisy; report honestly.
-    pts = [(game_acc(r["losses"], *best), r["rating"]) for r in rows if r["losses"]]
-
-    def rating_mae(low, span, mid, scale):
-        tot = 0.0
-        for acc, rating in pts:
-            a = min(max(acc, low + 0.5), low + span - 0.5)
-            tot += abs(mid - scale * math.log(span / (a - low) - 1) - rating)
-        return tot / len(pts)
-
-    cur = (elo._LOW, elo._SPAN, elo._MID, elo._SCALE)
-    grid = ((low, span, mid, scale) for low in range(20, 61, 5) for span in range(30, 76, 5) for mid in range(400, 2201, 100) for scale in range(200, 1001, 50) if low + span <= 101)
-    fit = min(grid, key=lambda p: rating_mae(*p))
-    naive = statistics.mean(abs(statistics.mean(r for _, r in pts) - r) for _, r in pts)
-    print(f"\nrating curve  current {cur}: MAE {rating_mae(*cur):.0f}")
-    print(f"              fitted  {fit}: MAE {rating_mae(*fit):.0f}   (always guessing the mean: {naive:.0f})")
+    # Game rating diagnostics: both anchored (using PGN headers) and unrated (headerless) estimates.
+    rated_rows = [r for r in rows if r["est_elo"] is not None]
+    anc_mae = statistics.mean(abs(r["est_elo"] - r["rating"]) for r in rated_rows)
+    anc_bias = statistics.mean(r["est_elo"] - r["rating"] for r in rated_rows)
+    unr_preds = [
+        elo.estimate(
+            r["ours"],
+            None,
+            opp_accuracy=r["opp_acc"],
+            result=r["result"],
+            best_rate=(r["badges"]["best"] + r["badges"]["great"] + r["badges"]["brilliant"]) / r["nonbook"] if r["nonbook"] > 0 else None,
+            error_rate=(r["badges"]["blunder"] + r["badges"]["mistake"] + r["badges"]["miss"]) / r["nonbook"] if r["nonbook"] > 0 else None,
+            nonbook_moves=r["nonbook"],
+            time_control=r["time_control"],
+        )
+        for r in rated_rows
+    ]
+    unr_mae = statistics.mean(abs(p - r["rating"]) for p, r in zip(unr_preds, rated_rows))
+    naive = statistics.mean(abs(statistics.mean(r["rating"] for r in rated_rows) - r["rating"]) for r in rated_rows)
+    print(f"\ngame rating   anchored: bias {anc_bias:+.0f}  MAE {anc_mae:.0f}")
+    print(f"              unrated : MAE {unr_mae:.0f}   (always guessing the mean: {naive:.0f})")
+    for label in sorted({band_label(r["rating"]) for r in rated_rows}, key=lambda s: int(s.split("–")[0])):
+        sub = [r for r in rated_rows if band_label(r["rating"]) == label]
+        w_sub = [r["est_elo"] - r["rating"] for r in sub if r["result"] == 1.0]
+        l_sub = [r["est_elo"] - r["rating"] for r in sub if r["result"] == 0.0]
+        b_all = statistics.mean(r["est_elo"] - r["rating"] for r in sub)
+        print(f"  {label:>10}: bias {b_all:+5.0f}  win {statistics.mean(w_sub) if w_sub else 0:+5.0f}  loss {statistics.mean(l_sub) if l_sub else 0:+5.0f}")
 
     print("\nbadges per player-game by band (brilliant / great / mistake / blunder / miss):")
     for label in sorted({band_label(r["rating"]) for r in rows}, key=lambda s: int(s.split("–")[0])):
@@ -106,7 +128,7 @@ def main():
         per = {b: tot[b] / len(sub) for b in ("brilliant", "great", "mistake", "blunder", "miss")}
         print(f"  {label:>10}: " + "  ".join(f"{v:.2f}" for v in per.values()))
 
-    print(json.dumps({"move_loss_scale": best[0], "harmonic_weight": best[1], "elo": dict(zip(("low", "span", "mid", "scale"), fit))}))
+    print(json.dumps({"move_loss_scale": best[0], "harmonic_weight": best[1], "anchored_mae": round(anc_mae, 1), "unrated_mae": round(unr_mae, 1)}))
 
 
 if __name__ == "__main__":

@@ -9,9 +9,9 @@ const SCALE: { badge: Badge; lost: string }[] = [
   { badge: "great", lost: "0%" },
   { badge: "best", lost: "0%" },
   { badge: "excellent", lost: "under 3%" },
-  { badge: "good", lost: "3–6%" },
-  { badge: "inaccuracy", lost: "6–14%" },
-  { badge: "mistake", lost: "14–28%" },
+  { badge: "good", lost: "3–5%" },
+  { badge: "inaccuracy", lost: "5–10%" },
+  { badge: "mistake", lost: "10–28%" },
   { badge: "miss", lost: "10%+" },
   { badge: "blunder", lost: "28%+" },
 ];
