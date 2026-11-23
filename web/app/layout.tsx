@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const title = "Hindsight Chess: Free Chess Game Review for Chess.com & Lichess";
+const title = "Hindsight Chess: Free Game Review for Chess.com & Lichess";
 const description =
   "Enter your Chess.com or Lichess username and get every move rated, from brilliant to blunder, with the better move shown. Free, 60 reviews a day, no account.";
 

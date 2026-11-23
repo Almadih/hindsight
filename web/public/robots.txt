@@ -1,0 +1,7 @@
+# Search and AI answers may use this site; please don't train models on it (a preference, not enforcement).
+User-Agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+Disallow: /api/
+
+Sitemap: https://hindsight.almadih.dev/sitemap.xml

@@ -1,0 +1,16 @@
+# Hindsight Chess
+
+> Free chess game review for Chess.com and Lichess. Enter a username or paste a PGN and Stockfish 19, running in the browser, rates every move from Brilliant to Blunder, explains mistakes and shows the better move. No account; up to 60 new reviews a day. Also available as an Android app.
+
+## Guides
+
+- [How it works](https://hindsight.almadih.dev/how-it-works): engine depths, the winning-chances formula, the ten verdicts and their thresholds, accuracy, limits
+- [How to review a chess game](https://hindsight.almadih.dev/how-to-review-a-chess-game): step-by-step guide to reviewing a Chess.com or Lichess game
+- [What makes a move brilliant](https://hindsight.almadih.dev/brilliant-move): the exact test for a Brilliant move, with Morphy's Opera Game as the example
+- [How chess accuracy works](https://hindsight.almadih.dev/chess-accuracy): move and game accuracy formulas and a per-rating-band comparison with Chess.com
+
+## Links
+
+- [Review a game](https://hindsight.almadih.dev/)
+- [Source code](https://github.com/Almadih/hindsight)
+- [Android app (APK)](https://github.com/Almadih/hindsight/releases/latest)

@@ -7,6 +7,6 @@ export const PIECES: PieceRenderObject = Object.fromEntries(
   CODES.map((code) => [
     code,
     // eslint-disable-next-line @next/next/no-img-element -- static SVGs; next/image adds nothing in a static export
-    () => <img src={`/pieces/staunty/${code}.svg`} alt="" draggable={false} className="pointer-events-none size-full select-none" />,
+    () => <img src={`/pieces/staunty/${code}.svg`} alt="" width={45} height={45} draggable={false} className="pointer-events-none size-full select-none" />,
   ]),
 );

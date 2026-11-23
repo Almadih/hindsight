@@ -13,6 +13,9 @@ import { GameList } from "@/components/landing/GameList";
 import { VerdictLadder } from "@/components/landing/VerdictLadder";
 import { DEMO } from "@/lib/demo-game";
 import { Icon } from "@/components/Icon";
+import { InView } from "@/components/InView";
+import { JsonLd } from "@/components/JsonLd";
+import { APK_URL, AUTHOR_ID, RELEASES_URL, REPO_URL, SITE, SITE_NAME } from "@/lib/site";
 import { BADGE, keyMoments, NOTABLE } from "@/lib/review";
 import { playMove, primeSounds } from "@/lib/sfx";
 import type { Platform } from "@/lib/api";
@@ -30,34 +33,60 @@ const STILL_PLY = DEMO.moves.findIndex((m) => m.san === "Qb8+") + 1;
 // The three coached moments that decided the game, chosen the same way as the review page's Key moments.
 const TURNING = keyMoments(DEMO.moves.filter((m) => m.coach), 3);
 
-const SITE = "https://hindsight.almadih.dev";
-const APK_URL = "https://github.com/Almadih/hindsight/releases/latest/download/hindsight.apk";
-const RELEASES_URL = "https://github.com/Almadih/hindsight/releases/latest";
-const JSON_LD = JSON.stringify({
+// One list feeds both the rendered FAQ and the FAQPage schema, so they can't drift apart.
+const FAQ: { q: string; a: string; link?: { href: string; text: string } }[] = [
+  { q: "Is it really free?", a: "Yes, with no account. You get up to 60 new reviews a day, and opening a game someone already reviewed doesn't count." },
+  {
+    q: "How do I review a Chess.com game?",
+    a: "Pick Chess.com, type your username and choose a game.",
+    link: { href: "/how-to-review-a-chess-game", text: "Step-by-step guide" },
+  },
+  { q: "Does it work with Lichess?", a: "Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines." },
+  { q: "Which engine does it use?", a: "Stockfish 19, run in your browser at depth 16 by default." },
+  { q: "Is there a mobile app?", a: "Yes, for Android. Download the latest APK directly from GitHub.", link: { href: APK_URL, text: "Download the APK" } },
+  {
+    q: "How is accuracy calculated?",
+    a: "From the winning chances each move loses, checked against Chess.com's own numbers.",
+    link: { href: "/chess-accuracy", text: "How accuracy works" },
+  },
+];
+
+const FREE = { "@type": "Offer", price: 0, priceCurrency: "USD" };
+const JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "WebSite", name: "Hindsight Chess", url: SITE },
+    { "@type": "WebSite", name: SITE_NAME, url: SITE, inLanguage: "en", publisher: { "@id": AUTHOR_ID } },
     {
       "@type": "WebApplication",
-      name: "Hindsight Chess",
+      name: SITE_NAME,
       url: SITE,
       applicationCategory: "GameApplication",
       operatingSystem: "Any",
       browserRequirements: "Requires JavaScript",
       isAccessibleForFree: true,
-      offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
-      author: { "@id": `${SITE}/#author` },
+      offers: FREE,
+      screenshot: `${SITE}/opengraph-image.png`,
+      featureList: ["Move-by-move verdicts from Brilliant to Blunder", "Game accuracy", "Chess.com and Lichess import", "PGN upload", "Stockfish 19 in the browser"],
+      author: { "@id": AUTHOR_ID },
     },
-    { "@type": "Person", "@id": `${SITE}/#author`, name: "Almadih", url: "https://almadih.dev", sameAs: ["https://github.com/Almadih"] },
+    {
+      "@type": "MobileApplication",
+      name: SITE_NAME,
+      operatingSystem: "Android",
+      applicationCategory: "GameApplication",
+      downloadUrl: APK_URL,
+      isAccessibleForFree: true,
+      offers: FREE,
+      sameAs: [RELEASES_URL],
+      author: { "@id": AUTHOR_ID },
+    },
+    { "@type": "Person", "@id": AUTHOR_ID, name: "Almadih", url: "https://almadih.dev", sameAs: ["https://github.com/Almadih"] },
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQ.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+    },
   ],
-}).replace(/</g, "\\u003c");
-
-const FAQ = [
-  ["Is it really free?", "Yes, with no account. You get up to 60 new reviews a day, and opening a game someone already reviewed doesn't count."],
-  ["How do I review a Chess.com game?", "Pick Chess.com, type your username and choose a game."],
-  ["Does it work with Lichess?", "Yes, same flow. Lichess users also get verdicts in plain words, not just engine lines."],
-  ["Which engine does it use?", "Stockfish 19, run in your browser at depth 16 by default."],
-] as const;
+};
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const subscribeReduced = (cb: () => void) => {
@@ -128,7 +157,7 @@ export default function Home() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
+      <JsonLd data={JSON_LD} />
       <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 lg:col-span-2">
           <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-[-0.04em]">
@@ -163,15 +192,19 @@ export default function Home() {
         </header>
 
         <div className="lg:col-start-2 lg:row-start-2 lg:pt-8">
-          <h1 className="text-[clamp(2.4rem,5.4vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">Every move, judged.</h1>
+          <h1 className="text-[clamp(2.4rem,5.4vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">
+            {/* The search phrase belongs in the H1; it reads as an eyebrow so the brand line stays the headline. */}
+            <span className="mb-4 block text-sm font-semibold tracking-normal text-muted">Free chess game review for Chess.com &amp; Lichess</span>
+            Every move, judged.
+          </h1>
           <p className="mt-5 max-w-[34ch] text-lg text-pretty text-muted">
             See where your game turned: every move rated, mistakes explained, the better move on the board.
           </p>
-          <p className="mt-3 max-w-[40ch] text-sm text-muted">Free chess game review for Chess.com &amp; Lichess. 60 reviews a day, powered by Stockfish.</p>
+          <p className="mt-3 max-w-[40ch] text-sm text-muted">60 reviews a day, powered by Stockfish.</p>
         </div>
 
         <div
-          className="relative lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:self-center"
+          className="relative flex flex-col lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:block lg:self-center"
           onMouseEnter={() => setHeld(true)}
           onMouseLeave={() => setHeld(false)}
           onFocus={() => setHeld(true)}
@@ -183,7 +216,8 @@ export default function Home() {
               <Board fen={move?.fen ?? START_FEN} flipped={false} move={move} fx={{ intensity: "epic", prevFen: ply > 1 ? DEMO.moves[ply - 2].fen : START_FEN }} />
             </div>
           </div>
-          <div className="relative z-40 mx-auto mt-4 max-w-[calc(100dvh-7.5rem)] lg:absolute lg:inset-x-0 lg:bottom-[5%] lg:mt-0 lg:px-[7%] lg:pl-[calc(7%+2.25rem)]">
+          {/* Phones: the finder comes before the demo board so the main action is above the fold; desktop overlays it on the board. */}
+          <div className="relative z-40 order-first mx-auto mb-4 w-full max-w-[calc(100dvh-7.5rem)] lg:absolute lg:order-none lg:mb-0 lg:inset-x-0 lg:bottom-[5%] lg:mt-0 lg:px-[7%] lg:pl-[calc(7%+2.25rem)]">
             <GameFinder onGames={(games, username, platform) => setFound({ games, username, platform })} onPgn={review} />
           </div>
         </div>
@@ -229,9 +263,10 @@ export default function Home() {
         <ol className="mt-8 grid gap-8 md:grid-cols-3">
           {TURNING.map((m) => (
             <li key={m.ply} className="border-t-2 pt-5" style={{ borderColor: BADGE[m.badge].color }}>
-              <div className="mb-5 max-w-[300px]">
+              {/* Mounted near the viewport: three extra boards in the static HTML cost ~100 images and hydration work up front. */}
+              <InView className="mb-5 aspect-square max-w-[300px]">
                 <Board id={`turning-${m.ply}`} fen={m.fen} flipped={false} move={m} />
-              </div>
+              </InView>
               <p className="flex items-center gap-3 text-xl font-bold">
                 <BadgeIcon badge={m.badge} size={30} />
                 <span>
@@ -253,6 +288,15 @@ export default function Home() {
             <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">Ten verdicts, one scale</h2>
             <p className="mt-4 max-w-[38ch] text-lg text-pretty text-muted">
               Every move gets one, measured by how much of your winning chances it kept or gave away.
+            </p>
+            <p className="mt-4 max-w-[38ch] text-pretty text-muted">
+              <Link href="/brilliant-move" className="underline decoration-line underline-offset-4 hover:text-fg">
+                What makes a move brilliant
+              </Link>{" "}
+              &middot;{" "}
+              <Link href="/how-it-works" className="underline decoration-line underline-offset-4 hover:text-fg">
+                The full method
+              </Link>
             </p>
           </div>
           <VerdictLadder />
@@ -287,32 +331,23 @@ export default function Home() {
       <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
         <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Questions</h2>
         <div className="mt-8 grid max-w-[60ch] gap-6">
-          {FAQ.map(([q, a]) => (
+          {FAQ.map(({ q, a, link }) => (
             <div key={q}>
               <h3 className="text-xl font-bold">{q}</h3>
-              <p className="mt-2 text-pretty text-muted">{a}</p>
+              <p className="mt-2 text-pretty text-muted">
+                {a}
+                {link && (
+                  <>
+                    {" "}
+                    <Link href={link.href} className="underline decoration-line underline-offset-4 hover:text-fg">
+                      {link.text}
+                    </Link>
+                    .
+                  </>
+                )}
+              </p>
             </div>
           ))}
-          <div>
-            <h3 className="text-xl font-bold">Is there a mobile app?</h3>
-            <p className="mt-2 text-pretty text-muted">
-              Yes, for Android.{" "}
-              <a href={APK_URL} className="underline decoration-line underline-offset-4 hover:text-fg">
-                Download the latest APK
-              </a>{" "}
-              directly from GitHub.
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xl font-bold">How is accuracy calculated?</h3>
-            <p className="mt-2 text-pretty text-muted">
-              From the winning chances each move loses, checked against Chess.com&rsquo;s own numbers.{" "}
-              <Link href="/how-it-works" className="underline decoration-line underline-offset-4 hover:text-fg">
-                How it works
-              </Link>
-              .
-            </p>
-          </div>
         </div>
       </section>
 
@@ -326,14 +361,23 @@ export default function Home() {
       </section>
 
       <footer className="mx-auto w-full max-w-[1400px] px-4 pb-10 text-sm text-muted sm:px-8">
-        <nav className="mb-4 flex gap-5">
+        <nav className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
           <Link href="/how-it-works" className="hover:text-fg">
             How it works
+          </Link>
+          <Link href="/how-to-review-a-chess-game" className="hover:text-fg">
+            How to review a game
+          </Link>
+          <Link href="/brilliant-move" className="hover:text-fg">
+            Brilliant moves
+          </Link>
+          <Link href="/chess-accuracy" className="hover:text-fg">
+            Accuracy
           </Link>
           <a href={APK_URL} className="hover:text-fg">
             Android APK
           </a>
-          <a href="https://github.com/Almadih/hindsight" className="hover:text-fg">
+          <a href={REPO_URL} className="hover:text-fg">
             GitHub
           </a>
         </nav>
