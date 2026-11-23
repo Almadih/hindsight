@@ -130,30 +130,36 @@ export default function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON_LD }} />
       <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
-        <header className="flex items-baseline justify-between gap-4 lg:col-span-2">
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 lg:col-span-2">
           <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-[-0.04em]">
             {/* Static export serves /brand/mark.svg as-is; next/image would need SVG opt-in for no gain. The text names the link, so the mark is decorative. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/mark.svg" alt="" width={27} height={28} className="self-center" />
             Hindsight
           </Link>
-          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          {/* Phones: logo + sound on row one, links on a full-width row two (order swaps them back from sm up). */}
+          <div className="order-last flex w-full items-center justify-between gap-x-4 sm:order-none sm:ml-auto sm:w-auto sm:justify-end">
             <Link href="/how-it-works" className="text-sm text-muted hover:text-fg">
               How it works
             </Link>
-            <a href={APK_URL} className="text-sm text-muted hover:text-fg">
-              Android app
-            </a>
-            <p className="hidden text-sm text-muted sm:block">Free · No account · Chess.com & Lichess</p>
-            <button
-              onClick={toggleSound}
-              aria-pressed={sound}
-              className="flex items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm font-semibold text-muted hover:text-fg aria-pressed:text-fg"
+            <a
+              href={APK_URL}
+              className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-bold text-[#141311] hover:brightness-110"
             >
-              <Icon name={sound ? "soundOn" : "soundOff"} size={18} />
-              {sound ? "Sound on" : "Sound off"}
-            </button>
+              <Icon name="download" size={16} />
+              Get the Android app
+            </a>
+            <p className="hidden text-sm text-muted lg:block">Free · No account · Chess.com & Lichess</p>
           </div>
+          <button
+            onClick={toggleSound}
+            aria-pressed={sound}
+            aria-label="Sound"
+            className="flex items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm font-semibold text-muted hover:text-fg aria-pressed:text-fg"
+          >
+            <Icon name={sound ? "soundOn" : "soundOff"} size={18} />
+            <span className="hidden md:inline">{sound ? "Sound on" : "Sound off"}</span>
+          </button>
         </header>
 
         <div className="lg:col-start-2 lg:row-start-2 lg:pt-8">
