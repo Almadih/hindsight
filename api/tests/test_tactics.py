@@ -116,3 +116,89 @@ def test_already_hanging_piece_while_in_check_not_blamed_on_evasion():
     b = board("2r1k3/2r5/8/8/7q/2R5/8/2R1K3 w - - 0 1")
     facts = describe(b, b.parse_san("Kd1"), "blunder", "e1f1", "c7c3", None, None)
     assert not any("leaves the rook on c3 hanging" in f for f in facts)
+
+
+def test_skewer_discovered_check_double_check_and_discovered_attack():
+    # Skewer: Re1+ skewers king on e6 and queen on e8
+    b_skewer = board("4q3/8/4k3/8/8/8/8/R5K1 w - - 0 1")
+    assert "Re1+ skewers the king on e6 and the queen on e8" in motifs(b_skewer, b_skewer.parse_san("Re1+"))
+
+    # Discovered check & double check
+    b_disc = board("4k3/8/8/8/4N3/8/8/4R2K w - - 0 1")
+    assert "Nc5+ unleashes a discovered check from the rook on e1" in motifs(b_disc, b_disc.parse_san("Nc5+"))
+    assert "Nf6+ delivers double check" in motifs(b_disc, b_disc.parse_san("Nf6+"))
+
+    # Discovered attack (non-check)
+    b_att = board("6k1/3q4/8/8/3N4/8/8/3R2K1 w - - 0 1")
+    assert "Nb5 uncovers an attack on the queen on d7" in motifs(b_att, b_att.parse_san("Nb5"))
+
+
+def test_adds_pressure_to_existing_pin_and_saves_threatened_piece():
+    # Opera Game 14. Rd1 adds pressure to Black's pinned rook on d7
+    b = board("e4 e5 Nf3 d6 d4 Bg4 dxe5 Bxf3 Qxf3 dxe5 Bc4 Nf6 Qb3 Qe7 Nc3 c6 Bg5 b5 Nxb5 cxb5 Bxb5+ Nbd7 O-O-O Rd8 Rxd7 Rxd7")
+    assert "Rd1 adds pressure to the pinned rook on d7" in motifs(b, b.parse_san("Rd1"))
+
+    # Great move saving a threatened piece (Nd2 is undefended and attacked by Rd4)
+    b_save = board("4k3/8/8/8/3r4/8/3N4/6K1 w - - 0 1")
+    facts = describe(b_save, b_save.parse_san("Nf3"), "great", "d2f3", None, None, None)
+    assert "Nf3 saves the knight from d2" in facts
+
+
+def test_multipv_refutation_missed_win_back_rank_and_trade_guard():
+    # Back-rank check vulnerability (1.h3?? allows 1...Rb1+ 2.Kh2)
+    b_rank = board("1r4k1/5ppp/8/8/8/8/4RPPP/6K1 w - - 0 1")
+    facts_br = describe(b_rank, b_rank.parse_san("h3"), "blunder", "e2e8", "b8b1", None, None, reply_pv=["b8b1", "g1h2"])
+    assert "it leaves the back rank vulnerable to Rb1+" in facts_br
+
+    # Multi-ply material win via refutation (non-capture first move -> fork winning the rook)
+    b_nf = board("4k3/8/8/8/3n4/8/8/R3K3 w - - 0 1")
+    facts_nf = describe(
+        b_nf,
+        b_nf.parse_san("Kd1"),
+        "mistake",
+        "e1f1",
+        "d4b3",
+        None,
+        None,
+        reply_pv=["d4b3", "d1c2", "b3a1"],
+    )
+    assert "it allows Nb3, winning the rook on a1" in facts_nf
+
+    # Capture-trade guard: 1.Bxf6 Bxf6 is a trade, NOT winning the bishop
+    b_trade2 = board("4k3/6p1/5n2/8/3B4/8/8/4K3 w - - 0 1")
+    facts_trade2 = describe(
+        b_trade2,
+        b_trade2.parse_san("Bxf6"),
+        "mistake",
+        "d4c3",
+        "g7f6",
+        None,
+        None,
+        reply_pv=["g7f6"],
+    )
+    assert not any("winning" in f for f in facts_trade2)
+
+
+def test_abandoned_defender_positional_cues_and_inaccuracy():
+    # Abandoned pawn defender (Ke8 on g8 so Re2 is not check)
+    b_pawn = board("6k1/8/8/3r4/8/3P4/3R4/4K3 w - - 0 1")
+    facts_pawn = describe(b_pawn, b_pawn.parse_san("Re2"), "inaccuracy", "d2e2", None, None, None)
+    assert "Re2 pulls a defender away from the pawn on d3" in facts_pawn
+
+    # Positional cue: castling
+    b_castle = board("4k3/8/8/8/8/8/8/4K2R w K - 0 1")
+    assert describe(b_castle, b_castle.parse_san("Kf1"), "mistake", "e1g1", None, None, None, phase="opening") == [
+        "O-O would have castled the king to safety"
+    ]
+
+    # Positional cue: opening development
+    b_dev = board("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
+    assert describe(b_dev, b_dev.parse_san("a3"), "inaccuracy", "g1f3", None, None, None, phase="opening") == [
+        "Nf3 develops the knight to f3"
+    ]
+
+    # Positional cue: endgame king activation
+    b_eg = board("8/8/8/8/8/8/8/4K2k w - - 0 1")
+    assert describe(b_eg, b_eg.parse_san("Kf1"), "mistake", "e1e2", None, None, None, phase="endgame") == [
+        "Ke2 activates the king for the endgame"
+    ]

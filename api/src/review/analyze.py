@@ -17,7 +17,7 @@ from .winprob import HUMAN_MATE, MATE_CP, game_accuracy, move_accuracy, perceive
 
 MAX_PLIES = 600
 # Part of every game hash: bump it whenever classification output changes so stale cached reviews are never served.
-ANALYSIS_VERSION = "8"
+ANALYSIS_VERSION = "9"
 PHASES = ("opening", "middlegame", "endgame")
 
 
@@ -329,6 +329,9 @@ def analyze(parsed: ParsedGame, evals: list[PositionEval]) -> dict:
                     None if is_draw else (lines_after[0].uci if lines_after else None),
                     mate_before,
                     mate_after,
+                    best_pv=best_line.pv if best_line else None,
+                    reply_pv=None if is_draw else (lines_after[0].pv if lines_after else None),
+                    phase=phase,
                 ),
                 **_white_eval(board, cp_after, mate_after),
             }
