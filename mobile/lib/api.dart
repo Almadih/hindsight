@@ -63,6 +63,16 @@ Future<List<GameSummary>> fetchGames(String platform, String username) async {
   return [for (final g in j['games']) GameSummary.fromJson(g)];
 }
 
+/// Fetches a single game's PGN from a Chess.com or Lichess game URL.
+Future<String> fetchGameByUrl(String url) async {
+  final j = await _request('/api/game-by-url', body: {'url': url});
+  final pgn = j is Map ? j['pgn'] : null;
+  if (pgn is! String || pgn.trim().isEmpty) {
+    throw ApiError('Could not read moves from that game', 502);
+  }
+  return pgn;
+}
+
 Future<PlayerProfile> fetchPlayer(String platform, String username) async =>
     PlayerProfile.fromJson(await _request('/api/player/$platform/${Uri.encodeComponent(username)}'));
 

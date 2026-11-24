@@ -66,23 +66,54 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late String _platform = lastPlatform;
+  static final _gameUrlPattern = RegExp(
+    r'^(?:https?://)?(?:(?:www|m)\.)?(?:chess\.com|lichess\.org)/',
+    caseSensitive: false,
+  );
+
+  late String _platform = lastPlatform == 'lichess' ? 'lichess' : 'chesscom';
   late final _name = TextEditingController(text: myUsernames.firstOrNull ?? '');
+  final _link = TextEditingController();
   List<GameSummary>? _games;
   Object? _error;
   bool _loading = false;
   String _shownFor = '';
   String _shownPlatform = '';
 
+  bool get _isLink => _platform == 'link';
+
   @override
   void dispose() {
     _name.dispose();
+    _link.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() => _isLink ? _openGameUrl(_link.text) : _find();
+
+  Future<void> _openGameUrl(String raw) async {
+    final url = raw.trim();
+    if (url.isEmpty || _loading) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final pgn = await fetchGameByUrl(url);
+      if (!mounted) return;
+      _analyze(pgn);
+    } catch (e) {
+      if (mounted) setState(() => _error = e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _find() async {
     final u = _name.text.trim();
-    if (u.isEmpty) return;
+    if (u.isEmpty || _loading) return;
+    if (_gameUrlPattern.hasMatch(u)) return _openGameUrl(u);
     FocusScope.of(context).unfocus();
     if (!RegExp(r'^[A-Za-z0-9_-]{1,30}$').hasMatch(u)) {
       setState(() {
@@ -197,33 +228,40 @@ class _HomeScreenState extends State<HomeScreen> {
               SegmentedButton<String>(
                 showSelectedIcon: false,
                 segments: const [
-                  ButtonSegment(value: 'chesscom', label: Text('Chess.com')),
-                  ButtonSegment(value: 'lichess', label: Text('Lichess')),
+                  ButtonSegment(value: 'chesscom', label: Text('Chess.com', maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis)),
+                  ButtonSegment(value: 'lichess', label: Text('Lichess', maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis)),
+                  ButtonSegment(value: 'link', label: Text('Game link', maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis)),
                 ],
                 selected: {_platform},
-                onSelectionChanged: (s) => setState(() => _platform = s.first),
+                onSelectionChanged: (s) => setState(() {
+                  _platform = s.first;
+                  _error = null;
+                }),
                 style: ButtonStyle(
                   minimumSize: const WidgetStatePropertyAll(Size.fromHeight(48)),
+                  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8)),
                   backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? kGreen : kCard),
                   foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? kInk : Colors.white),
-                  textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: _name,
+                key: ValueKey(_isLink),
+                controller: _isLink ? _link : _name,
                 autocorrect: false,
                 enableSuggestions: false,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _find(),
-                decoration: const InputDecoration(
-                  hintText: 'Username',
+                keyboardType: _isLink ? TextInputType.url : TextInputType.text,
+                textInputAction: _isLink ? TextInputAction.go : TextInputAction.search,
+                onSubmitted: (_) => _submit(),
+                decoration: InputDecoration(
+                  hintText: _isLink ? 'Paste Chess.com or Lichess game link' : 'Username',
                   filled: true,
                   fillColor: kCard,
-                  border: OutlineInputBorder(borderSide: BorderSide.none),
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
                 ),
               ),
-              if (myUsernames.isNotEmpty)
+              if (!_isLink && myUsernames.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Wrap(spacing: 8, children: [
@@ -231,10 +269,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ]),
                 ),
               const SizedBox(height: 16),
-              GreenButton('Find games', onPressed: _loading ? null : _find),
+              GreenButton(_isLink ? 'Review game' : 'Find games', onPressed: _loading ? null : _submit),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 TextButton(onPressed: _paste, child: const Text('Paste PGN')),
-                if (_games != null)
+                if (!_isLink && _games != null)
                   TextButton(
                     onPressed: () => _push(PlayerScreen(platform: _shownPlatform, username: _shownFor)),
                     child: const Text('Player page'),
@@ -276,7 +314,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _results() {
     if (_loading) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-    if (_error != null) return ErrorRetry(error: _error!, onRetry: _find, compact: true);
+    if (_error != null) return ErrorRetry(error: _error!, onRetry: _submit, compact: true);
+    if (_isLink) return const SizedBox.shrink();
     final games = _games;
     if (games == null) return const SizedBox.shrink();
     if (games.isEmpty) return const Padding(padding: EdgeInsets.all(16), child: Text('No recent games found.'));

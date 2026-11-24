@@ -43,4 +43,50 @@ void main() {
     expect(a.date, '2026-10-15');
     expect(b.date, '2026-10-15');
   });
+
+  test('fetchGameByUrl posts url and returns pgn', () async {
+    final prev = api.client;
+    addTearDown(() => api.client = prev);
+    api.client = MockClient((req) async {
+      expect(req.method, 'POST');
+      expect(req.url.path, '/api/game-by-url');
+      expect(jsonDecode(req.body), {'url': 'https://lichess.org/abcd1234'});
+      return http.Response(
+        jsonEncode({
+          'pgn': '1. e4 e5 2. Nf3 Nc6 *',
+          'url': 'https://lichess.org/abcd1234',
+          'platform': 'lichess',
+          'white': {'name': 'Alice', 'rating': 1500},
+          'black': {'name': 'Bob', 'rating': 1480},
+          'result': '*',
+          'timeClass': 'blitz',
+          'hash': 'abc123',
+        }),
+        200,
+      );
+    });
+    expect(await api.fetchGameByUrl('https://lichess.org/abcd1234'), '1. e4 e5 2. Nf3 Nc6 *');
+  });
+
+  test('fetchGameByUrl throws ApiError on 422, 404, and missing pgn', () async {
+    final prev = api.client;
+    addTearDown(() => api.client = prev);
+
+    api.client = MockClient((_) async => http.Response('{"detail":"Paste a Chess.com or Lichess game link"}', 422));
+    await expectLater(
+      api.fetchGameByUrl('https://example.com/123'),
+      throwsA(isA<api.ApiError>()
+          .having((e) => e.status, 'status', 422)
+          .having((e) => e.message, 'message', 'Paste a Chess.com or Lichess game link')),
+    );
+
+    api.client = MockClient((_) async => http.Response('{"detail":"Game not found"}', 404));
+    await expectLater(
+      api.fetchGameByUrl('https://lichess.org/notfound'),
+      throwsA(isA<api.ApiError>().having((e) => e.status, 'status', 404).having((e) => e.message, 'message', 'Game not found')),
+    );
+
+    api.client = MockClient((_) async => http.Response('{}', 200));
+    await expectLater(api.fetchGameByUrl('https://lichess.org/abcd1234'), throwsA(isA<api.ApiError>()));
+  });
 }
