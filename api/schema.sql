@@ -39,3 +39,15 @@ CREATE TABLE IF NOT EXISTS ai_calls (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ai_calls_time ON ai_calls(created_at);
+
+-- User reports of AI-generated coach notes (Google Play AI-Generated Content policy).
+CREATE TABLE IF NOT EXISTS coach_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_hash TEXT NOT NULL,
+    ply INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    ip TEXT NOT NULL,
+    created_at INTEGER NOT NULL          -- unix seconds
+);
+
+CREATE INDEX IF NOT EXISTS idx_coach_reports_ip ON coach_reports(ip, created_at);

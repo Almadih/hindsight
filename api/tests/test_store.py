@@ -8,6 +8,8 @@ from review.store import (
     DAY,
     PER_DAY,
     PER_MINUTE,
+    REPORTS_PER_DAY,
+    add_coach_report,
     allow_analysis,
     claim_ai_slot,
     get_review,
@@ -128,3 +130,13 @@ def test_put_get_review_and_claim_ai_slot():
     asyncio.run(put_review(db, {**report, "accuracy": {"white": 10.0, "black": 10.0}}, "1. d4 *"))
     got = asyncio.run(get_review(db, "h1"))
     assert got is not None and got["accuracy"]["white"] == 91.2
+
+
+def test_add_coach_report_and_daily_limit():
+    db = FakeD1()
+    h = "a" * 64
+    assert all(asyncio.run(add_coach_report(db, h, i, "Inaccurate", "1.1.1.1", 1000)) for i in range(REPORTS_PER_DAY))
+    assert asyncio.run(add_coach_report(db, h, 99, "Inaccurate", "1.1.1.1", 1000)) is False
+    # Other IPs are unaffected, and the limit resets after 24 hours.
+    assert asyncio.run(add_coach_report(db, h, 1, "Offensive", "2.2.2.2", 1000)) is True
+    assert asyncio.run(add_coach_report(db, h, 1, "Inaccurate", "1.1.1.1", 1000 + DAY + 1)) is True

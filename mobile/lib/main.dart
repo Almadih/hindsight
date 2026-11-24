@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -14,8 +15,26 @@ import 'theme.dart';
 final navKey = GlobalKey<NavigatorState>();
 const _share = MethodChannel('hindsight/share');
 
+void _registerLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    final gpl = await rootBundle.loadString('android/app/src/main/cpp/stockfish/COPYING');
+    yield LicenseEntryWithLineBreaks(
+      const ['Stockfish'],
+      'Stockfish chess engine — GNU General Public License v3.0.\n'
+      'Complete corresponding source code: https://github.com/Almadih/hindsight\n\n$gpl',
+    );
+    final pieces = await rootBundle.loadString('assets/pieces/LICENSE.md');
+    yield LicenseEntryWithLineBreaks(const ['Staunty Chess Pieces'], pieces);
+    yield const LicenseEntryWithLineBreaks(
+      ['Chess Sound Effects'],
+      'Sound effects sourced from Pixabay under the Pixabay Content License.',
+    );
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _registerLicenses();
   await initPrefs();
   runApp(const HindsightApp());
 }

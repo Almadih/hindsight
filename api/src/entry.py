@@ -12,6 +12,7 @@ from review.coach import add_coach
 from review.player import summarize
 from review.fetchers import UpstreamError, fetch_game_by_url, fetch_games, parse_game_url
 from review.store import (
+    add_coach_report,
     allow_analysis,
     claim_ai_slot,
     get_review,
@@ -31,6 +32,12 @@ app = FastAPI()
 
 class GameByUrlRequest(BaseModel):
     url: str = Field(max_length=500)
+
+
+class CoachReportRequest(BaseModel):
+    game_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    ply: int = Field(ge=0, le=1000)
+    reason: str = Field(min_length=1, max_length=200)
 
 
 @app.get("/api/health")
@@ -117,6 +124,18 @@ async def review(game_hash: str = Path(pattern=r"^[0-9a-f]{64}$"), env=env):
     if report := await get_review(env.DB, game_hash):
         return report
     raise HTTPException(404, "review not found")
+
+
+@app.post("/api/report")
+async def report_coach(req: CoachReportRequest, request: Request, env=env):
+    """Record a user report flagging an AI-generated coach note."""
+    reason = req.reason.strip()
+    if not reason:
+        raise HTTPException(422, "Please choose or enter a reason")
+    ip = request.headers.get("cf-connecting-ip", "unknown")
+    if not await add_coach_report(env.DB, req.game_hash, req.ply, reason, ip, int(time.time())):
+        raise HTTPException(429, "Too many reports from your connection today. Try again later.")
+    return {"ok": True}
 
 
 @app.post("/api/analyze")

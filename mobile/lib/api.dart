@@ -102,3 +102,8 @@ Future<Report?> cachedReview(String pgn) async {
     rethrow;
   }
 }
+
+/// Flags an AI-generated coach note for review (Google Play AI-Generated Content policy).
+Future<void> reportCoachNote(String gameHash, int ply, String reason) async {
+  await _request('/api/report', body: {'game_hash': gameHash, 'ply': ply, 'reason': reason});
+}

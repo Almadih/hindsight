@@ -11,5 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/how-to-review-a-chess-game`, lastModified: "2026-11-23" },
     { url: `${SITE}/brilliant-move`, lastModified: "2026-11-23" },
     { url: `${SITE}/chess-accuracy`, lastModified: "2026-11-23" },
+    { url: `${SITE}/privacy`, lastModified: "2026-11-24" },
+    { url: `${SITE}/terms`, lastModified: "2026-11-24" },
   ];
 }

@@ -4,6 +4,7 @@ import json
 
 PER_MINUTE = 5
 PER_DAY = 60
+REPORTS_PER_DAY = 10
 DAY = 86_400
 
 
@@ -108,3 +109,16 @@ async def put_review(db, report: dict, pgn: str) -> None:
         )
         .run()
     )
+
+
+async def add_coach_report(db, game_hash: str, ply: int, reason: str, ip: str, now: int) -> bool:
+    """Record a user report on an AI coach note if `ip` is under the daily limit; False means rate limited."""
+    result = await (
+        db.prepare(
+            "INSERT INTO coach_reports (game_hash, ply, reason, ip, created_at) SELECT ?1, ?2, ?3, ?4, ?5"
+            " WHERE (SELECT COUNT(*) FROM coach_reports WHERE ip = ?4 AND created_at > ?5 - ?6) < ?7"
+        )
+        .bind(game_hash, ply, reason, ip, now, DAY, REPORTS_PER_DAY)
+        .run()
+    )
+    return result["meta"]["changes"] == 1

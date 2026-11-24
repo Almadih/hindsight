@@ -89,4 +89,16 @@ void main() {
     api.client = MockClient((_) async => http.Response('{}', 200));
     await expectLater(api.fetchGameByUrl('https://lichess.org/abcd1234'), throwsA(isA<api.ApiError>()));
   });
+
+  test('reportCoachNote posts game_hash, ply, and reason to /api/report', () async {
+    final prev = api.client;
+    addTearDown(() => api.client = prev);
+    api.client = MockClient((req) async {
+      expect(req.method, 'POST');
+      expect(req.url.path, '/api/report');
+      expect(jsonDecode(req.body), {'game_hash': 'a' * 64, 'ply': 12, 'reason': 'Offensive or inappropriate'});
+      return http.Response('{"ok":true}', 200);
+    });
+    await api.reportCoachNote('a' * 64, 12, 'Offensive or inappropriate');
+  });
 }

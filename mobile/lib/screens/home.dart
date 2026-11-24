@@ -292,17 +292,24 @@ class _HomeScreenState extends State<HomeScreen> {
               const Text('How is accuracy calculated?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const Padding(
                 padding: EdgeInsets.only(top: 4),
-                child: Text('From the winning chances each move loses, checked against Chess.com’s own numbers.', style: TextStyle(color: Colors.white70)),
+                child: Text('From the winning chances each move loses, calibrated on rated games.', style: TextStyle(color: Colors.white70)),
               ),
               const SizedBox(height: 24),
               Wrap(spacing: 4, children: [
                 TextButton(onPressed: () => _push(const HowItWorksScreen()), child: const Text('How it works')),
+                TextButton(onPressed: () => _openUrl('https://hindsight.almadih.dev/privacy'), child: const Text('Privacy')),
+                TextButton(onPressed: () => _openUrl('https://hindsight.almadih.dev/terms'), child: const Text('Terms')),
+                TextButton(
+                  onPressed: () => showLicensePage(context: context, applicationName: 'Hindsight'),
+                  child: const Text('Licenses'),
+                ),
                 TextButton(onPressed: () => _openUrl('https://hindsight.almadih.dev'), child: const Text('Web version')),
-                TextButton(onPressed: () => _openUrl('https://almadih.dev'), child: const Text('almadih.dev')),
+                TextButton(onPressed: () => _openUrl('https://github.com/Almadih/hindsight'), child: const Text('GitHub')),
               ]),
               const Text(
                 'Built by Almadih. Hindsight is an independent project, not affiliated with or endorsed by Chess.com or Lichess. '
-                'Reviews are shared: once a game has been reviewed, anyone can open it. Sounds from Pixabay. '
+                'Reviews are shared: once a game has been reviewed, anyone can open it. Coach notes are AI-generated. '
+                'Source code (GPLv3) on GitHub. Sounds from Pixabay. '
                 'Chess pieces: Staunty by sadsnake1, CC BY-NC-SA 4.0.',
                 style: TextStyle(fontSize: 12, color: Colors.white54),
               ),

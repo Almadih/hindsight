@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api.dart' as api;
 import '../game.dart';
 import '../models.dart';
 import '../prefs.dart' as prefs;
@@ -9,6 +10,7 @@ import '../review_logic.dart';
 import '../screens/analyzing.dart';
 
 const _qualities = {'quick': 'Quick (depth 14)', 'standard': 'Standard (depth 16)', 'deep': 'Deep (depth 18)'};
+const _reportReasons = ['Offensive or inappropriate', 'Inaccurate or misleading', 'Other'];
 
 /// Overflow menu shared by the review screens: share link, private re-analysis, analysis quality.
 class ReviewMenu extends StatelessWidget {
@@ -61,6 +63,27 @@ class ReviewMenu extends StatelessWidget {
     }
   }
 
+  Future<void> _report(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: const Text('Report AI coach note'),
+        children: [
+          for (final r in _reportReasons)
+            SimpleDialogOption(onPressed: () => Navigator.pop(c, r), child: Text(r)),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    try {
+      await api.reportCoachNote(report.hash, ply, reason);
+      messenger.showSnackBar(const SnackBar(content: Text('Thanks, report submitted.')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(api.friendlyError(e))));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final origin = originalGameUrl(report.headers);
@@ -77,6 +100,8 @@ class ReviewMenu extends StatelessWidget {
             _reanalyze(context);
           case 'quality':
             _quality(context);
+          case 'report':
+            _report(context);
         }
       },
       itemBuilder: (_) => [
@@ -85,6 +110,7 @@ class ReviewMenu extends StatelessWidget {
         CheckedPopupMenuItem(value: 'sound', checked: prefs.soundOn, child: const Text('Sound')),
         const PopupMenuItem(value: 'reanalyze', child: Text('Re-analyze privately')),
         const PopupMenuItem(value: 'quality', child: Text('Analysis quality')),
+        const PopupMenuItem(value: 'report', child: Text('Report AI coach note')),
       ],
     );
   }

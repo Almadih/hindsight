@@ -5,6 +5,7 @@ export const SITE_NAME = "Hindsight Chess";
 export const APK_URL = "https://github.com/Almadih/hindsight/releases/latest/download/hindsight.apk";
 export const RELEASES_URL = "https://github.com/Almadih/hindsight/releases/latest";
 export const REPO_URL = "https://github.com/Almadih/hindsight";
+export const CONTACT_EMAIL = "privacy@almadih.dev";
 export const AUTHOR_ID = `${SITE}/#author`;
 // app/opengraph-image.png; a page's own openGraph object drops the inherited image, so pages pass it back.
 const OG_IMAGE = { url: "/opengraph-image.png", width: 1200, height: 630 };

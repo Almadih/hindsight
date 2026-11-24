@@ -21,7 +21,7 @@ if "workers" not in sys.modules:
 
 import entry  # noqa: E402
 from review.analyze import AnalyzeRequest, PositionEval, parse_game  # noqa: E402
-from review.store import PER_MINUTE  # noqa: E402
+from review.store import PER_MINUTE, REPORTS_PER_DAY  # noqa: E402
 from test_analyze import OPERA, synthetic_evals  # noqa: E402
 from test_store import FakeD1  # noqa: E402
 
@@ -253,3 +253,20 @@ def test_game_by_url_invalid_not_found_and_unparseable(monkeypatch):
     assert empty.value.status_code == 422
     assert empty.value.detail == "Could not read moves from that game"
     assert "game_url:chesscom:live:123" not in env.CACHE.data
+
+
+def test_report_coach_validation_and_rate_limit():
+    env = _env()
+    h = "a" * 64
+    res = asyncio.run(entry.report_coach(entry.CoachReportRequest(game_hash=h, ply=5, reason="Offensive"), _req(), env=env))
+    assert res == {"ok": True}
+
+    with pytest.raises(HTTPException) as blank:
+        asyncio.run(entry.report_coach(entry.CoachReportRequest(game_hash=h, ply=5, reason="   "), _req(), env=env))
+    assert blank.value.status_code == 422
+
+    for _ in range(REPORTS_PER_DAY - 1):
+        asyncio.run(entry.report_coach(entry.CoachReportRequest(game_hash=h, ply=5, reason="Inaccurate"), _req(), env=env))
+    with pytest.raises(HTTPException) as limited:
+        asyncio.run(entry.report_coach(entry.CoachReportRequest(game_hash=h, ply=5, reason="Inaccurate"), _req(), env=env))
+    assert limited.value.status_code == 429

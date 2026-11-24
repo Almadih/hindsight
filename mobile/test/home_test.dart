@@ -28,6 +28,9 @@ void main() {
     expect(find.text('Blunder'), findsOneWidget);
     expect(find.text('Is it really free?'), findsOneWidget);
     expect(find.text('Try a demo review'), findsOneWidget);
+    expect(find.text('Privacy'), findsOneWidget);
+    expect(find.text('Terms'), findsOneWidget);
+    expect(find.text('Licenses'), findsOneWidget);
   });
 
   testWidgets('platform control exposes both options and selects Lichess', (tester) async {

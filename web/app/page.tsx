@@ -380,6 +380,12 @@ export default function Home() {
           <a href={REPO_URL} className="hover:text-fg">
             GitHub
           </a>
+          <Link href="/privacy" className="hover:text-fg">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-fg">
+            Terms
+          </Link>
         </nav>
         <p className="mb-2">Built by Almadih.</p>
         <p className="max-w-[80ch] text-pretty">
