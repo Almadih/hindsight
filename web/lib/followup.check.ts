@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { analyzePositions, type AnalysisQuality } from "./engine/pool.ts";
 import { parseInfo } from "./engine/uci.ts";
 import { parsePgn, reportPgn, START_FEN } from "./pgn.ts";
-import { capturedPieces, decidingMoments, followUpLine, isForced, isGoodRetry, keyMoments, personalize, whiteWinPct } from "./review.ts";
+import { capturedPieces, decidingMoments, followUpLine, isForced, isGoodRetry, keyMoments, originalGameUrl, personalize, whiteWinPct } from "./review.ts";
 import type { ReviewMove } from "./types.ts";
 
 // Scholar's mate: the line stops at mate even though the PV goes on.
@@ -140,5 +140,20 @@ assert.equal(isForced(START_FEN), false);
     globalThis.Worker = savedWorker;
   }
 }
+
+// originalGameUrl: allows verified Chess.com & Lichess game URLs only.
+assert.deepEqual(originalGameUrl({ Site: "Chess.com", Link: "https://www.chess.com/game/live/123456" }), {
+  url: "https://www.chess.com/game/live/123456",
+  label: "Chess.com",
+});
+assert.deepEqual(originalGameUrl({ Site: "https://lichess.org/AbCdEfGh" }), {
+  url: "https://lichess.org/AbCdEfGh",
+  label: "Lichess",
+});
+assert.equal(originalGameUrl({ Site: "Paris FRA" }), null);
+assert.equal(originalGameUrl({ Link: "javascript:alert(1)" }), null);
+assert.equal(originalGameUrl({ Link: "http://www.chess.com/game/live/123" }), null);
+assert.equal(originalGameUrl({ Link: "https://evil.example/game/live/123" }), null);
+assert.equal(originalGameUrl({ Site: "https://www.chess.com/member/hikaru" }), null);
 
 console.log("followUpLine ok");

@@ -52,6 +52,34 @@ export function decidingMoments<M extends Pick<ReviewMove, "ply" | "badge" | "wB
   return { moments: mine ? picked : keyMoments(moves), mine };
 }
 
+/** Verified original Chess.com or Lichess game link from PGN headers, or null for custom/untrusted PGNs. */
+export function originalGameUrl(headers: Record<string, string>): { url: string; label: "Chess.com" | "Lichess" } | null {
+  for (const raw of [headers.Link, headers.GameURL, headers.Site]) {
+    if (!raw) continue;
+    let u: URL;
+    try {
+      u = new URL(raw.trim());
+    } catch {
+      continue;
+    }
+    if (u.protocol !== "https:" || u.username || u.password || u.port) continue;
+    const host = u.hostname.toLowerCase();
+    if (
+      (host === "chess.com" || host === "www.chess.com" || host === "m.chess.com") &&
+      /^\/(?:game\/(?:live|daily)|(?:live|daily)\/game)\/\d+\/?$/.test(u.pathname)
+    ) {
+      return { url: u.href, label: "Chess.com" };
+    }
+    if (
+      (host === "lichess.org" || host === "www.lichess.org" || host === "m.lichess.org") &&
+      /^\/[A-Za-z0-9]{8,12}(?:\/(?:white|black))?\/?$/.test(u.pathname)
+    ) {
+      return { url: u.href, label: "Lichess" };
+    }
+  }
+  return null;
+}
+
 /** The coach's first sentence, as a one-line gist. */
 export function gist(text: string | null | undefined): string | null {
   if (!text) return null;

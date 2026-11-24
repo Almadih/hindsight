@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart' hide Badge;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models.dart';
 import '../prefs.dart' as prefs;
@@ -127,6 +128,7 @@ class ReviewSummaryScreen extends StatelessWidget {
     final result = h['Result'];
     final me = mySide(h, prefs.myUsernames);
     final platform = platformOf(h);
+    final origin = originalGameUrl(h);
     final (:moments, :mine) = decidingMoments(report.moves, me);
     String acc(Side s) => report.accuracy[s]?.toStringAsFixed(1) ?? '-';
     final bubble = [
@@ -201,15 +203,52 @@ class ReviewSummaryScreen extends StatelessWidget {
             final left = <Widget>[
               CoachBubble(text: bubble),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 4,
                 children: [
-                  Icon(Icons.circle, size: 8, color: shared ? kMuted : kGreen),
-                  const SizedBox(width: 6),
-                  Text(
-                    shared ? 'Shared review' : 'Analyzed on this phone',
-                    style: const TextStyle(fontSize: 13, color: kMuted),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, size: 8, color: shared ? kMuted : kGreen),
+                      const SizedBox(width: 6),
+                      Text(
+                        shared ? 'Shared review' : 'Analyzed on this phone',
+                        style: const TextStyle(fontSize: 13, color: kMuted),
+                      ),
+                    ],
                   ),
+                  if (origin != null) ...[
+                    const Text('·', style: TextStyle(fontSize: 13, color: kMuted)),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () async {
+                        var ok = false;
+                        try {
+                          ok = await launchUrl(Uri.parse(origin.url), mode: LaunchMode.externalApplication);
+                        } catch (_) {}
+                        if (!ok && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t open ${origin.url}')));
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'View on ${origin.label}',
+                              style: const TextStyle(fontSize: 13, color: kGreen, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.open_in_new, size: 13, color: kGreen),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),

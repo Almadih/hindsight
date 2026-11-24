@@ -1,9 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../game.dart';
 import '../models.dart';
 import '../prefs.dart' as prefs;
+import '../review_logic.dart';
 import '../screens/analyzing.dart';
 
 const _qualities = {'quick': 'Quick (depth 14)', 'standard': 'Standard (depth 16)', 'deep': 'Deep (depth 18)'};
@@ -49,25 +51,41 @@ class ReviewMenu extends StatelessWidget {
         ),
       );
 
+  Future<void> _openOriginal(BuildContext context, String url) async {
+    var ok = false;
+    try {
+      ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {}
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Couldn’t open $url')));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => PopupMenuButton<String>(
-        onSelected: (v) {
-          switch (v) {
-            case 'share':
-              SharePlus.instance.share(ShareParams(text: 'https://hindsight.almadih.dev/review?g=${report.hash}&ply=$ply'));
-            case 'sound':
-              prefs.soundOn = !prefs.soundOn;
-            case 'reanalyze':
-              _reanalyze(context);
-            case 'quality':
-              _quality(context);
-          }
-        },
-        itemBuilder: (_) => [
-          if (linkable) const PopupMenuItem(value: 'share', child: Text('Share link')),
-          CheckedPopupMenuItem(value: 'sound', checked: prefs.soundOn, child: const Text('Sound')),
-          const PopupMenuItem(value: 'reanalyze', child: Text('Re-analyze privately')),
-          const PopupMenuItem(value: 'quality', child: Text('Analysis quality')),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final origin = originalGameUrl(report.headers);
+    return PopupMenuButton<String>(
+      onSelected: (v) {
+        switch (v) {
+          case 'open_game':
+            if (origin != null) _openOriginal(context, origin.url);
+          case 'share':
+            SharePlus.instance.share(ShareParams(text: 'https://hindsight.almadih.dev/review?g=${report.hash}&ply=$ply'));
+          case 'sound':
+            prefs.soundOn = !prefs.soundOn;
+          case 'reanalyze':
+            _reanalyze(context);
+          case 'quality':
+            _quality(context);
+        }
+      },
+      itemBuilder: (_) => [
+        if (origin != null) PopupMenuItem(value: 'open_game', child: Text('View on ${origin.label}')),
+        if (linkable) const PopupMenuItem(value: 'share', child: Text('Share link')),
+        CheckedPopupMenuItem(value: 'sound', checked: prefs.soundOn, child: const Text('Sound')),
+        const PopupMenuItem(value: 'reanalyze', child: Text('Re-analyze privately')),
+        const PopupMenuItem(value: 'quality', child: Text('Analysis quality')),
+      ],
+    );
+  }
 }

@@ -95,4 +95,20 @@ void main() {
     expect(isForced('7k/P7/8/8/8/8/5q2/7K w - - 0 1'), isFalse);
     expect(isForced(fen), isFalse);
   });
+
+  test('originalGameUrl allows verified Chess.com and Lichess game links only', () {
+    expect(
+      originalGameUrl({'Site': 'Chess.com', 'Link': 'https://www.chess.com/game/live/123456'}),
+      (url: 'https://www.chess.com/game/live/123456', label: 'Chess.com'),
+    );
+    expect(
+      originalGameUrl({'Site': 'https://lichess.org/AbCdEfGh'}),
+      (url: 'https://lichess.org/AbCdEfGh', label: 'Lichess'),
+    );
+    expect(originalGameUrl({'Site': 'Paris FRA'}), isNull);
+    expect(originalGameUrl({'Link': 'javascript:alert(1)'}), isNull);
+    expect(originalGameUrl({'Link': 'http://www.chess.com/game/live/123'}), isNull);
+    expect(originalGameUrl({'Link': 'https://evil.example/game/live/123'}), isNull);
+    expect(originalGameUrl({'Site': 'https://www.chess.com/member/hikaru'}), isNull);
+  });
 }

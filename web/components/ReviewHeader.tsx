@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { readQuality, type AnalysisQuality } from "@/lib/engine/pool";
+import { originalGameUrl } from "@/lib/review";
 import type { Report, Side } from "@/lib/types";
 import { Icon } from "./Icon";
 
@@ -22,6 +23,7 @@ type Props = {
 /** Review sidebar header: navigation, share/sound actions, game title, opening, and analysis depth toolbar. */
 export function ReviewHeader({ report, names, me, myName, platform, shared, shareUrl, sound, onToggleSound, onReanalyze }: Props) {
   const { headers } = report;
+  const origin = originalGameUrl(headers);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [confirmReanalyze, setConfirmReanalyze] = useState(false);
   const [quality, setQuality] = useState<AnalysisQuality>(readQuality);
@@ -64,6 +66,19 @@ export function ReviewHeader({ report, names, me, myName, platform, shared, shar
         </Link>
 
         <div className="flex items-center gap-1">
+          {origin && (
+            <a
+              href={origin.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded bg-raised/60 hover:bg-raised px-2 py-1 text-xs font-medium text-muted hover:text-fg border border-line/50 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              title={`View original game on ${origin.label}`}
+              aria-label={`View original game on ${origin.label}`}
+            >
+              <Icon name="external" size={14} />
+              <span>{origin.label}</span>
+            </a>
+          )}
           {shareUrl && (
             <button
               onClick={copyLink}

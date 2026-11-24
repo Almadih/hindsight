@@ -205,6 +205,26 @@ String? platformOf(Map<String, String> headers) {
   return site.contains('chess.com') ? 'chesscom' : site.contains('lichess') ? 'lichess' : null;
 }
 
+final _chesscomPath = RegExp(r'^/(?:game/(?:live|daily)|(?:live|daily)/game)/\d+/?$');
+final _lichessPath = RegExp(r'^/[A-Za-z0-9]{8,12}(?:/(?:white|black))?/?$');
+
+/// Verified original Chess.com or Lichess game link from PGN headers, or null for custom/untrusted PGNs.
+({String url, String label})? originalGameUrl(Map<String, String> headers) {
+  for (final raw in [headers['Link'], headers['GameURL'], headers['Site']]) {
+    if (raw == null || raw.trim().isEmpty) continue;
+    final u = Uri.tryParse(raw.trim());
+    if (u == null || u.scheme != 'https' || u.userInfo.isNotEmpty || u.hasPort) continue;
+    final host = u.host.toLowerCase();
+    if ((host == 'chess.com' || host == 'www.chess.com' || host == 'm.chess.com') && _chesscomPath.hasMatch(u.path)) {
+      return (url: u.toString(), label: 'Chess.com');
+    }
+    if ((host == 'lichess.org' || host == 'www.lichess.org' || host == 'm.lichess.org') && _lichessPath.hasMatch(u.path)) {
+      return (url: u.toString(), label: 'Lichess');
+    }
+  }
+  return null;
+}
+
 /// Your key moments (plus the opponent's single biggest swing if it outranks one of yours), else both sides'.
 ({List<ReviewMove> moments, bool mine}) decidingMoments(List<ReviewMove> moves, Side? me) {
   final own = me == null ? const <ReviewMove>[] : moves.where((m) => m.color == me).toList();
