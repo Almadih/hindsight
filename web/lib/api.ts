@@ -1,5 +1,5 @@
 import type { PositionEval } from "./engine/pool";
-import type { GameSummary, PlayerProfile, Report } from "./types";
+import type { GameSummary, Player, PlayerProfile, Report } from "./types";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -19,9 +19,28 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export type Platform = "chesscom" | "lichess";
 
+export type GameByUrl = {
+  pgn: string;
+  url: string;
+  platform: Platform;
+  white: Player;
+  black: Player;
+  result: string;
+  timeClass: string | null;
+  hash: string | null;
+};
+
 export async function fetchGames(platform: Platform, username: string): Promise<GameSummary[]> {
   const { games } = await request<{ games: GameSummary[] }>(`/api/games/${platform}/${encodeURIComponent(username)}`);
   return games;
+}
+
+export function fetchGameByUrl(url: string): Promise<GameByUrl> {
+  return request<GameByUrl>("/api/game-by-url", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
 }
 
 export function fetchPlayer(platform: Platform, username: string): Promise<PlayerProfile> {
