@@ -3,13 +3,14 @@ import time
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Path, Request
+from pydantic import BaseModel, Field
 from workers import fetch
 from workers.asgi import entrypoint, env
 
 from review.analyze import AnalysisError, AnalyzeRequest, analyze, parse_game
 from review.coach import add_coach
 from review.player import summarize
-from review.fetchers import UpstreamError, fetch_games
+from review.fetchers import UpstreamError, fetch_game_by_url, fetch_games, parse_game_url
 from review.store import (
     allow_analysis,
     claim_ai_slot,
@@ -21,10 +22,15 @@ from review.store import (
 )
 
 GAMES_TTL = 300  # seconds a fetched game list stays in KV
+GAME_URL_TTL = 3600  # seconds a single game fetched by URL stays in KV
 # Hard ceiling on coach AI calls per rolling day; past it, reviews still work with fact-based comments.
 AI_DAILY_CAP = 300
 
 app = FastAPI()
+
+
+class GameByUrlRequest(BaseModel):
+    url: str = Field(max_length=500)
 
 
 @app.get("/api/health")
@@ -58,6 +64,28 @@ async def cached_games(env, platform: str, username: str) -> list[dict]:
 @app.get("/api/games/{platform}/{username}")
 async def games(platform: Literal["chesscom", "lichess"], username: str = USERNAME, env=env):
     return {"games": await cached_games(env, platform, username)}
+
+
+@app.post("/api/game-by-url")
+async def game_by_url(req: GameByUrlRequest, env=env):
+    ref = parse_game_url(req.url)
+    if ref is None:
+        raise HTTPException(422, "Paste a Chess.com or Lichess game link")
+    key = ref.cache_key
+    if cached := await env.CACHE.get(key):
+        return json.loads(cached)
+    try:
+        game = await fetch_game_by_url(fetch, ref)
+    except UpstreamError as e:
+        raise HTTPException(e.status, str(e)) from e
+    try:
+        parsed = parse_game(game["pgn"])
+    except AnalysisError as e:
+        msg = "Only standard chess games are supported" if "standard" in str(e).lower() else "Could not read moves from that game"
+        raise HTTPException(422, msg) from e
+    result = {**game, "hash": parsed.hash}
+    await env.CACHE.put(key, json.dumps(result), {"expirationTtl": GAME_URL_TTL})
+    return result
 
 
 @app.get("/api/player/{platform}/{username}")

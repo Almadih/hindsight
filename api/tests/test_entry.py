@@ -32,12 +32,14 @@ CUSTOM_PGN = '[Site "Custom"]\n[White "Alice"]\n[Black "Bob"]\n[Result "0-1"]\n\
 class FakeKV:
     def __init__(self):
         self.data: dict[str, str] = {}
+        self.ttls: dict[str, int | None] = {}
 
     async def get(self, key: str):
         return self.data.get(key)
 
     async def put(self, key: str, value: str, opts=None):
         self.data[key] = value
+        self.ttls[key] = opts.get("expirationTtl") if isinstance(opts, dict) else None
 
     async def delete(self, key: str):
         self.data.pop(key, None)
@@ -160,3 +162,94 @@ def test_games_skips_hashing_and_player_hashes_lazily(monkeypatch):
     profile = asyncio.run(entry.player("lichess", "Alice", env=env))
     assert profile["games"][0]["hash"] == parse_game(MINI_PGN).hash
     assert json.loads(env.CACHE.data["games:lichess:alice"])[0]["hash"] == parse_game(MINI_PGN).hash
+
+
+def test_game_by_url_success_and_cache_hit(monkeypatch):
+    env = _env()
+    calls = []
+
+    async def fake_fetch_game_by_url(fetch_fn, ref):
+        calls.append(ref)
+        return {
+            "pgn": MINI_PGN,
+            "url": ref.canonical_url,
+            "platform": ref.platform,
+            "white": {"name": "Alice", "rating": 1500},
+            "black": {"name": "Bob", "rating": 1480},
+            "result": "1-0",
+            "timeClass": "blitz",
+        }
+
+    monkeypatch.setattr(entry, "fetch_game_by_url", fake_fetch_game_by_url)
+
+    res = asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="https://lichess.org/HqjDTU4A"), env=env))
+    assert res == {
+        "pgn": MINI_PGN,
+        "url": "https://lichess.org/HqjDTU4A",
+        "platform": "lichess",
+        "white": {"name": "Alice", "rating": 1500},
+        "black": {"name": "Bob", "rating": 1480},
+        "result": "1-0",
+        "timeClass": "blitz",
+        "hash": parse_game(MINI_PGN).hash,
+    }
+    assert len(res["hash"]) == 64
+    assert len(calls) == 1
+    assert "game_url:lichess:game:HqjDTU4A" in env.CACHE.data
+    assert env.CACHE.ttls["game_url:lichess:game:HqjDTU4A"] == 3600
+
+    # Different URL form for the same game hits KV cache without calling upstream.
+    cached = asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="lichess.org/HqjDTU4A1234/black#20"), env=env))
+    assert cached == res
+    assert len(calls) == 1
+
+
+def test_game_by_url_invalid_not_found_and_unparseable(monkeypatch):
+    env = _env()
+    called = False
+
+    async def fake_fetch_game_by_url(fetch_fn, ref):
+        nonlocal called
+        called = True
+        if ref.game_id == "404":
+            raise entry.UpstreamError(404, "Game not found")
+        if ref.game_id == "960":
+            raise entry.UpstreamError(422, "Only standard chess games are supported")
+        return {
+            "pgn": '[White "A"]\n[Black "B"]\n\n*',
+            "url": ref.canonical_url,
+            "platform": ref.platform,
+            "white": {"name": "A", "rating": None},
+            "black": {"name": "B", "rating": None},
+            "result": "*",
+            "timeClass": None,
+        }
+
+    monkeypatch.setattr(entry, "fetch_game_by_url", fake_fetch_game_by_url)
+
+    # Invalid / SSRF URL fails before any upstream call.
+    with pytest.raises(HTTPException) as bad:
+        asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="https://evil.com/game/live/123"), env=env))
+    assert bad.value.status_code == 422
+    assert bad.value.detail == "Paste a Chess.com or Lichess game link"
+    assert not called
+
+    # 404 propagates as "Game not found" and is not cached.
+    with pytest.raises(HTTPException) as missing:
+        asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="https://www.chess.com/game/live/404"), env=env))
+    assert missing.value.status_code == 404
+    assert missing.value.detail == "Game not found"
+    assert "game_url:chesscom:live:404" not in env.CACHE.data
+
+    # Non-standard variant propagates 422.
+    with pytest.raises(HTTPException) as variant:
+        asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="https://www.chess.com/game/live/960"), env=env))
+    assert variant.value.status_code == 422
+    assert variant.value.detail == "Only standard chess games are supported"
+
+    # Empty/unparseable PGN caught by parse_game -> 422 and not cached.
+    with pytest.raises(HTTPException) as empty:
+        asyncio.run(entry.game_by_url(entry.GameByUrlRequest(url="https://www.chess.com/game/live/123"), env=env))
+    assert empty.value.status_code == 422
+    assert empty.value.detail == "Could not read moves from that game"
+    assert "game_url:chesscom:live:123" not in env.CACHE.data
