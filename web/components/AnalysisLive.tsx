@@ -33,26 +33,44 @@ function whiteEval(ev: PositionEval | undefined): WhiteEval {
   return { evalWhite: (sign * (best.cp ?? 0)) / 100, mateWhite: null };
 }
 
+/** Build dense, gap-free graph points up to `graphMax` by carrying forward the last known eval across sparse gaps. */
+function buildGraphMoves(evals: (PositionEval | undefined)[], graphMax: number) {
+  const moves: { ply: number; badge: "best"; evalWhite: number; mateWhite: number | null }[] = [];
+  let prev = whiteEval(evals[0]);
+  for (let i = 0; i < graphMax; i++) {
+    const point = evals[i + 1] ? whiteEval(evals[i + 1]) : prev;
+    prev = point;
+    moves.push({ ply: i + 1, badge: "best", ...point });
+  }
+  return moves;
+}
+
 /**
  * The wait, made watchable: the board walks through the game as the engine finishes each position,
  * with the engine's preferred move, the eval bar and the graph filling in live.
  */
 export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props) {
-  // Positions 0..frontier-1 are all evaluated; the board only ever shows those.
+  // Count all evaluated positions: tile-4 + deferred forced moves finish out of order,
+  // so a contiguous-prefix frontier would freeze the progress bar.
+  const done = evals.filter(Boolean).length;
+  // Contiguous evaluated prefix, used to let the graph lead the board cursor when available.
   let frontier = 0;
   while (frontier < fens.length && evals[frontier]) frontier++;
-  // Count only the contiguous prefix: workers finish out of order, so "done" alone overstates progress.
-  const done = frontier;
+
   const [view, setView] = useState(0);
   const [flipped, setFlipped] = useState(() => mySide(headers) === "black");
 
-  useEffect(() => {
-    if (view >= frontier - 1) return;
-    const t = setTimeout(() => setView((v) => v + 1), STEP_MS);
-    return () => clearTimeout(t);
-  }, [view, frontier]);
+  // Advance forward-only through evaluated positions with a best move so deferred forced moves
+  // never stall the board and pre-classified terminal positions (lines: []) don't hijack t=0.
+  const nextEval = evals.findIndex((e, idx) => idx > view && Boolean(e?.lines.length));
 
-  const shown = Math.min(view, Math.max(0, frontier - 1));
+  useEffect(() => {
+    if (nextEval === -1) return;
+    const t = setTimeout(() => setView(nextEval), STEP_MS);
+    return () => clearTimeout(t);
+  }, [nextEval]);
+
+  const shown = Math.min(view, Math.max(0, fens.length - 1));
   const fen = fens[shown];
   const ev = evals[shown];
   const best = ev?.lines[0]?.uci;
@@ -61,10 +79,11 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
   const ratings: Record<Side, string | undefined> = { white: headers.WhiteElo, black: headers.BlackElo };
   const material = materialDiff(fen);
   const captured = capturedPieces(fen);
-  const graph = {
-    start: whiteEval(evals[0]),
-    moves: Array.from({ length: Math.max(0, frontier - 1) }, (_, i) => ({ ply: i + 1, badge: "best" as const, ...whiteEval(evals[i + 1]) })),
-  };
+
+  const graphMax = Math.min(Math.max(frontier - 1, shown), Math.max(0, fens.length - 1));
+  const graph = { start: whiteEval(evals[0]), moves: buildGraphMoves(evals, graphMax) };
+  const totalMoves = Math.ceil((fens.length - 1) / 2);
+  const currentMove = Math.min(Math.ceil(done / 2), totalMoves);
   const moveLabel = shown ? `${Math.ceil(shown / 2)}.${shown % 2 ? "" : ".."} ${sans[shown - 1]}` : "the start";
 
   return (
@@ -97,7 +116,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
         </header>
 
         <div className="space-y-3 rounded-md bg-raised p-4" aria-live="polite">
-          <p className="font-semibold">{classifying ? "Judging every move and writing coach notes…" : `Analyzing move ${Math.ceil(done / 2)} of ${Math.ceil((fens.length - 1) / 2)}`}</p>
+          <p className="font-semibold">{classifying ? "Judging every move and writing coach notes…" : `Analyzing move ${currentMove} of ${totalMoves}`}</p>
           <progress className="h-2 w-full" aria-label="Analysis progress" value={classifying ? undefined : done} max={fens.length} />
           <p className="text-sm text-muted">
             {bestSan ? (
@@ -114,7 +133,7 @@ export function AnalysisLive({ fens, sans, headers, evals, classifying }: Props)
         <EvalGraph report={graph} ply={shown} className="h-24" />
         <p className="text-sm text-pretty text-muted">
           Stockfish is checking every position. The verdicts arrive together when it finishes; a game this long takes about{" "}
-          {Math.max(10, Math.round(fens.length * 0.45))} seconds.
+          {Math.max(5, Math.round(fens.length * 0.2))} seconds.
         </p>
       </aside>
     </main>
