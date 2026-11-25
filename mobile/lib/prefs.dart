@@ -24,3 +24,7 @@ void rememberMe(String username) {
 
 String get lastPlatform => prefs.getString('platform') ?? 'chesscom';
 set lastPlatform(String v) => prefs.setString('platform', v);
+
+String? get dismissedUpdateVersion => prefs.getString('hindsight_dismissed_update');
+set dismissedUpdateVersion(String? v) =>
+    v == null ? prefs.remove('hindsight_dismissed_update') : prefs.setString('hindsight_dismissed_update', v);

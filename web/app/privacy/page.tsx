@@ -9,7 +9,7 @@ export const metadata = pageMeta(PATH, TITLE, DESCRIPTION);
 
 export default function PrivacyPolicy() {
   return (
-    <ArticleShell path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-24" updated="November 24, 2026">
+    <ArticleShell path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-25" updated="November 25, 2026">
       <section className={SECTION}>
         <h2 className={H2}>Overview</h2>
         <p className={P}>
@@ -54,6 +54,13 @@ export default function PrivacyPolicy() {
         <p className={P}>
           <strong>Analytics:</strong> The Android app contains <strong>no</strong> analytics, tracking, or advertising SDKs. The website uses a lightweight,
           self-hosted, cookieless page-view counter (<code className="text-fg">stats.almadih.dev</code>).
+        </p>
+        <p className={P}>
+          <strong>Firebase Cloud Messaging (Google):</strong> Used on Android only to deliver broadcast announcements to devices that grant notification
+          permission. It uses an anonymous FCM registration token, with no user accounts and no advertising.
+        </p>
+        <p className={P}>
+          <strong>Shorebird:</strong> Used on Android to check for and download small over-the-air code bugfixes without requiring a full app store reinstall.
         </p>
       </section>
 

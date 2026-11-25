@@ -270,3 +270,52 @@ def test_report_coach_validation_and_rate_limit():
     with pytest.raises(HTTPException) as limited:
         asyncio.run(entry.report_coach(entry.CoachReportRequest(game_hash=h, ply=5, reason="Inaccurate"), _req(), env=env))
     assert limited.value.status_code == 429
+
+
+def test_app_config_defaults_and_cache_header():
+    env = _env()
+    res = asyncio.run(entry.app_config(env=env))
+    assert res.status_code == 200
+    assert res.headers["cache-control"] == "public, max-age=300"
+    assert json.loads(res.body) == entry.DEFAULT_APP_CONFIG["android"]
+
+    ios_res = asyncio.run(entry.app_config(platform="ios", env=env))
+    assert ios_res.status_code == 200
+    assert ios_res.headers["cache-control"] == "public, max-age=300"
+    assert json.loads(ios_res.body) == entry.DEFAULT_APP_CONFIG["ios"]
+
+
+def test_app_config_kv_override_and_sanitization():
+    env = _env()
+    env.CACHE.data["app_config:android"] = json.dumps(
+        {
+            "latest_version": "1.2.0",
+            "min_version": 100,
+            "title": "Update available",
+            "message": "Please update.",
+            "unknown_key": "ignored",
+        }
+    )
+    res = asyncio.run(entry.app_config(platform="android", env=env))
+    body = json.loads(res.body)
+    assert body == {
+        "latest_version": "1.2.0",
+        "min_version": "0.0.0",
+        "title": "Update available",
+        "message": "Please update.",
+        "store_url": "https://github.com/Almadih/hindsight/releases/latest/download/hindsight.apk",
+    }
+    assert "unknown_key" not in body
+
+
+def test_app_config_malformed_and_non_dict_fail_open():
+    env = _env()
+    env.CACHE.data["app_config:android"] = "{not valid json"
+    res = asyncio.run(entry.app_config(platform="android", env=env))
+    assert res.status_code == 200
+    assert json.loads(res.body) == entry.DEFAULT_APP_CONFIG["android"]
+
+    env.CACHE.data["app_config:ios"] = json.dumps(["not", "a", "dict"])
+    ios_res = asyncio.run(entry.app_config(platform="ios", env=env))
+    assert ios_res.status_code == 200
+    assert json.loads(ios_res.body) == entry.DEFAULT_APP_CONFIG["ios"]

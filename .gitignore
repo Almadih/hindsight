@@ -24,3 +24,7 @@ api/scripts/calibrate/data/
 /graft/
 /promo/
 /reports/
+
+# Local-only KV config script and its test
+api/scripts/app_config.py
+api/tests/test_app_config_script.py

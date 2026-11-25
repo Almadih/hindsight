@@ -107,3 +107,6 @@ Future<Report?> cachedReview(String pgn) async {
 Future<void> reportCoachNote(String gameHash, int ply, String reason) async {
   await _request('/api/report', body: {'game_hash': gameHash, 'ply': ply, 'reason': reason});
 }
+
+Future<AppConfig> fetchAppConfig({String platform = 'android'}) async =>
+    AppConfig.fromJson(await _request('/api/app-config?platform=${Uri.encodeQueryComponent(platform)}'));

@@ -4,13 +4,16 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'nav.dart';
-import 'screens/analyzing.dart';
 import 'prefs.dart';
+import 'push.dart';
+import 'screens/analyzing.dart';
 import 'screens/home.dart';
 import 'screens/player.dart';
 import 'theme.dart';
+import 'update_check.dart';
 
 final navKey = GlobalKey<NavigatorState>();
 const _share = MethodChannel('hindsight/share');
@@ -46,12 +49,13 @@ class HindsightApp extends StatefulWidget {
   State<HindsightApp> createState() => _HindsightAppState();
 }
 
-class _HindsightAppState extends State<HindsightApp> {
+class _HindsightAppState extends State<HindsightApp> with WidgetsBindingObserver {
   StreamSubscription<Uri>? _sub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Text shared into the app (MainActivity): at launch via initialText, while running via "shared".
     _share.setMethodCallHandler((call) async {
       if (call.method == 'shared') _openPgn(call.arguments as String);
@@ -61,8 +65,20 @@ class _HindsightAppState extends State<HindsightApp> {
       if (!mounted) return;
       _sub = AppLinks().uriLinkStream.listen(_open);
       final text = await _share.invokeMethod<String>('initialText');
+      if (!mounted) return;
       if (text != null) _openPgn(text);
+      unawaited(initPush(onOpenUrl: _openNotificationUrl, navKey: navKey));
+      final ctx = navKey.currentContext;
+      if (ctx != null && ctx.mounted) unawaited(checkForUpdate(ctx));
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final ctx = navKey.currentContext;
+      if (ctx != null) unawaited(checkForUpdate(ctx));
+    }
   }
 
   void _openPgn(String pgn) =>
@@ -70,8 +86,18 @@ class _HindsightAppState extends State<HindsightApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     super.dispose();
+  }
+
+  void _openNotificationUrl(Uri uri) {
+    if (uri.host == 'hindsight.almadih.dev' &&
+        (uri.path.startsWith('/review') || uri.path.startsWith('/player'))) {
+      _open(uri);
+    } else {
+      unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
+    }
   }
 
   void _open(Uri uri) {

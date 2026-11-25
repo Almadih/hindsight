@@ -164,3 +164,23 @@ class PlayerProfile {
   final List<PlayerGame> history; // newest first
   final List<PlayerTheme> themes;
 }
+
+class AppConfig {
+  const AppConfig({
+    required this.latestVersion,
+    required this.minVersion,
+    required this.title,
+    required this.message,
+    required this.storeUrl,
+  });
+
+  factory AppConfig.fromJson(Map<String, dynamic> j) => AppConfig(
+        latestVersion: (j['latest_version'] ?? j['latestVersion']) as String? ?? '0.0.0',
+        minVersion: (j['min_version'] ?? j['minVersion']) as String? ?? '0.0.0',
+        title: j['title'] as String? ?? '',
+        message: j['message'] as String? ?? '',
+        storeUrl: (j['store_url'] ?? j['storeUrl']) as String? ?? '',
+      );
+
+  final String latestVersion, minVersion, title, message, storeUrl;
+}

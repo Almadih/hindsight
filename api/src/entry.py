@@ -3,6 +3,7 @@ import time
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Path, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from workers import fetch
 from workers.asgi import entrypoint, env
@@ -43,6 +44,42 @@ class CoachReportRequest(BaseModel):
 @app.get("/api/health")
 async def health():
     return {"ok": True}
+
+
+DEFAULT_APP_CONFIG: dict[str, dict[str, str | None]] = {
+    "android": {
+        "latest_version": "0.0.0",
+        "min_version": "0.0.0",
+        "title": None,
+        "message": None,
+        "store_url": "https://github.com/Almadih/hindsight/releases/latest/download/hindsight.apk",
+    },
+    "ios": {
+        "latest_version": "0.0.0",
+        "min_version": "0.0.0",
+        "title": None,
+        "message": None,
+        "store_url": None,
+    },
+}
+
+
+@app.get("/api/app-config")
+async def app_config(platform: Literal["android", "ios"] = "android", env=env):
+    cfg = dict(DEFAULT_APP_CONFIG[platform])
+    if raw := await env.CACHE.get(f"app_config:{platform}"):
+        try:
+            override = json.loads(raw)
+        except ValueError:
+            override = None
+        if isinstance(override, dict):
+            for key in cfg:
+                if key in override:
+                    cfg[key] = override[key]
+            for vkey in ("latest_version", "min_version"):
+                if not isinstance(cfg[vkey], str):
+                    cfg[vkey] = "0.0.0"
+    return JSONResponse(content=cfg, headers={"Cache-Control": "public, max-age=300"})
 
 
 USERNAME = Path(pattern=r"^[A-Za-z0-9_-]{1,30}$")
