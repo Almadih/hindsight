@@ -1,0 +1,2 @@
+# Cloudflare's built-in trailing-slash handling redirects with 307; this makes it a permanent 301.
+/:page/ /:page 301

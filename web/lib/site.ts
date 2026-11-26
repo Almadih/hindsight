@@ -21,13 +21,13 @@ export function pageMeta(path: string, title: string, description: string): Meta
   };
 }
 
-/** TechArticle + BreadcrumbList for an explainer page; `modified` is the date its content last changed. */
-export function articleLd(path: string, headline: string, description: string, modified: string) {
+/** TechArticle (or WebPage for legal pages) + BreadcrumbList; `modified` is the date its content last changed. */
+export function articleLd(path: string, headline: string, description: string, modified: string, type: "TechArticle" | "WebPage" = "TechArticle") {
   return {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "TechArticle",
+        "@type": type,
         headline,
         description,
         url: `${SITE}${path}`,

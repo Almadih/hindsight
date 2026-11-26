@@ -15,13 +15,13 @@ const GUIDES = [
   ["/chess-accuracy", "How chess accuracy works"],
 ] as const;
 
-type Props = { path: string; title: string; description: string; modified: string; updated: string; children: ReactNode };
+type Props = { path: string; title: string; description: string; modified: string; updated: string; type?: "TechArticle" | "WebPage"; children: ReactNode };
 
 /** Layout for the explainer pages: back link, H1, freshness line, body, then a CTA and links to the other guides. */
-export function ArticleShell({ path, title, description, modified, updated, children }: Props) {
+export function ArticleShell({ path, title, description, modified, updated, type, children }: Props) {
   return (
     <main className="mx-auto w-full max-w-[1400px] px-4 pt-5 pb-24 sm:px-8">
-      <JsonLd data={articleLd(path, title, description, modified)} />
+      <JsonLd data={articleLd(path, title, description, modified, type)} />
       <Link href="/" className={`text-sm text-muted ${A}`}>
         &larr; Hindsight
       </Link>

@@ -9,7 +9,7 @@ export const metadata = pageMeta(PATH, TITLE, DESCRIPTION);
 
 export default function PrivacyPolicy() {
   return (
-    <ArticleShell path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-25" updated="November 25, 2026">
+    <ArticleShell type="WebPage" path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-25" updated="November 25, 2026">
       <section className={SECTION}>
         <h2 className={H2}>Overview</h2>
         <p className={P}>
