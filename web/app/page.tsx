@@ -1,12 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { BadgeIcon } from "@/components/BadgeIcon";
 import { Board } from "@/components/Board";
 import { EvalBar } from "@/components/EvalBar";
-import { EvalGraph } from "@/components/EvalGraph";
 import { CoachCard } from "@/components/landing/CoachCard";
 import { GameFinder } from "@/components/landing/GameFinder";
 import { GameList } from "@/components/landing/GameList";
@@ -20,6 +20,12 @@ import { BADGE, keyMoments, NOTABLE } from "@/lib/review";
 import { playMove, primeSounds } from "@/lib/sfx";
 import type { Platform } from "@/lib/api";
 import type { GameSummary } from "@/lib/types";
+
+// recharts is ~100 KB and its ResponsiveContainer draws nothing until measured in the browser, so it loads after first paint.
+const EvalGraph = dynamic(() => import("@/components/EvalGraph").then((m) => m.EvalGraph), {
+  ssr: false,
+  loading: () => <div className="h-full rounded-md bg-[#403d39]" />,
+});
 
 const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const LAST = DEMO.moves.length;
@@ -158,207 +164,212 @@ export default function Home() {
   return (
     <>
       <JsonLd data={JSON_LD} />
-      <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
-        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 lg:col-span-2">
-          <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-[-0.04em]">
-            {/* Static export serves /brand/mark.svg as-is; next/image would need SVG opt-in for no gain. The text names the link, so the mark is decorative. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/mark.svg" alt="" width={27} height={28} className="self-center" />
-            Hindsight
-          </Link>
-          {/* Phones: logo + sound on row one, links on a full-width row two (order swaps them back from sm up). */}
-          <div className="order-last flex w-full items-center justify-between gap-x-4 sm:order-none sm:ml-auto sm:w-auto sm:justify-end">
-            <Link href="/how-it-works" className="text-sm text-muted hover:text-fg">
-              How it works
+      <main>
+        <section className="mx-auto grid w-full max-w-[1400px] gap-x-12 gap-y-6 px-4 pt-5 pb-14 sm:px-8 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:grid-rows-[auto_auto_1fr] lg:pb-8">
+          <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 lg:col-span-2">
+            <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-[-0.04em]">
+              {/* Static export serves /brand/mark.svg as-is; next/image would need SVG opt-in for no gain. The text names the link, so the mark is decorative. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/mark.svg" alt="" width={27} height={28} className="self-center" />
+              Hindsight
             </Link>
-            <a
-              href={APK_URL}
-              className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-bold text-[#141311] hover:brightness-110"
-            >
-              <Icon name="download" size={16} />
-              Get the Android app
-            </a>
-            <p className="hidden text-sm text-muted lg:block">Free · No account · Chess.com & Lichess</p>
-          </div>
-          <button
-            onClick={toggleSound}
-            aria-pressed={sound}
-            aria-label="Sound"
-            className="flex items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm font-semibold text-muted hover:text-fg aria-pressed:text-fg"
-          >
-            <Icon name={sound ? "soundOn" : "soundOff"} size={18} />
-            <span className="hidden md:inline">{sound ? "Sound on" : "Sound off"}</span>
-          </button>
-        </header>
-
-        <div className="lg:col-start-2 lg:row-start-2 lg:pt-8">
-          <h1 className="text-[clamp(2.4rem,5.4vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">
-            {/* The search phrase belongs in the H1; it reads as an eyebrow so the brand line stays the headline. */}
-            <span className="mb-4 block text-sm font-semibold tracking-normal text-muted">Free chess game review for Chess.com &amp; Lichess</span>
-            Every move, judged.
-          </h1>
-          <p className="mt-5 max-w-[34ch] text-lg text-pretty text-muted">
-            See where your game turned: every move rated, mistakes explained, the better move on the board.
-          </p>
-          <p className="mt-3 max-w-[40ch] text-sm text-muted">60 reviews a day, powered by Stockfish.</p>
-        </div>
-
-        <div
-          className="relative flex flex-col lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:block lg:self-center"
-          onMouseEnter={() => setHeld(true)}
-          onMouseLeave={() => setHeld(false)}
-          onFocus={() => setHeld(true)}
-          onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setHeld(false)}
-        >
-          <div className="mx-auto flex w-full max-w-[calc(100dvh-7.5rem)] gap-2">
-            <EvalBar ev={move ?? DEMO.start} flipped={false} />
-            <div className="min-w-0 flex-1 shadow-[0_24px_70px_rgba(0,0,0,0.5)]" aria-label="Demo review of the Opera Game" role="img">
-              <Board fen={move?.fen ?? START_FEN} flipped={false} move={move} fx={{ intensity: "epic", prevFen: ply > 1 ? DEMO.moves[ply - 2].fen : START_FEN }} />
-            </div>
-          </div>
-          {/* Phones: the finder comes before the demo board so the main action is above the fold; desktop overlays it on the board. */}
-          <div className="relative z-40 order-first mx-auto mb-4 w-full max-w-[calc(100dvh-7.5rem)] lg:absolute lg:order-none lg:mb-0 lg:inset-x-0 lg:bottom-[5%] lg:mt-0 lg:px-[7%] lg:pl-[calc(7%+2.25rem)]">
-            <GameFinder onGames={(games, username, platform) => setFound({ games, username, platform })} onPgn={review} />
-          </div>
-        </div>
-
-        <aside className="flex min-h-0 flex-col gap-4 lg:col-start-2 lg:row-start-3 lg:max-h-[calc(100dvh-22rem)]">
-          {found ? (
-            <GameList
-              games={found.games}
-              username={found.username}
-              onPick={review}
-              onClose={() => setFound(null)}
-              playerHref={`/player?p=${found.platform}&u=${encodeURIComponent(found.username)}`}
-            />
-          ) : (
-            <>
-              {/* Graph first: the coach card changes height per move, and a control must not move under the cursor. */}
-              <EvalGraph
-                report={DEMO}
-                ply={ply}
-                onSelect={(p) => {
-                  setStep(p);
-                  setHeld(true);
-                }}
-                className="h-16 shrink-0"
-              />
-              <CoachCard move={move} totalPlies={LAST} opening={DEMO.opening} />
-              <p className="text-sm text-muted">
-                A real Hindsight review of the Opera Game: Paul Morphy vs the Duke of Brunswick and Count Isouard, Paris 1858. Accuracy{" "}
-                <span className="font-semibold text-fg tabular-nums">{DEMO.accuracy.white}</span> vs{" "}
-                <span className="font-semibold text-fg tabular-nums">{DEMO.accuracy.black}</span>. Click the graph to jump.
-              </p>
-            </>
-          )}
-        </aside>
-      </section>
-
-      <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
-        <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Where the game turned</h2>
-        <p className="mt-4 max-w-[52ch] text-lg text-pretty text-muted">
-          The graph is White&rsquo;s chance of winning, move by move. The review finds the moments that moved it and tells you why.
-        </p>
-        <EvalGraph report={DEMO} ply={ply} onSelect={(p) => setStep(p)} className="mt-10 h-44 sm:h-56" />
-        <ol className="mt-8 grid gap-8 md:grid-cols-3">
-          {TURNING.map((m) => (
-            <li key={m.ply} className="border-t-2 pt-5" style={{ borderColor: BADGE[m.badge].color }}>
-              {/* Mounted near the viewport: three extra boards in the static HTML cost ~100 images and hydration work up front. */}
-              <InView className="mb-5 aspect-square max-w-[300px]">
-                <Board id={`turning-${m.ply}`} fen={m.fen} flipped={false} move={m} />
-              </InView>
-              <p className="flex items-center gap-3 text-xl font-bold">
-                <BadgeIcon badge={m.badge} size={30} />
-                <span>
-                  <span className="tabular-nums">
-                    {Math.ceil(m.ply / 2)}.{m.color === "black" ? ".." : ""}
-                  </span>{" "}
-                  {m.san} <span style={{ color: BADGE[m.badge].color }}>{BADGE[m.badge].phrase}</span>
-                </span>
-              </p>
-              <p className="mt-3 text-pretty text-fg/85">{m.coach}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section id="verdicts" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <div>
-            <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">Ten verdicts, one scale</h2>
-            <p className="mt-4 max-w-[38ch] text-lg text-pretty text-muted">
-              Every move gets one, measured by how much of your winning chances it kept or gave away.
-            </p>
-            <p className="mt-4 max-w-[38ch] text-pretty text-muted">
-              <Link href="/brilliant-move" className="underline decoration-line underline-offset-4 hover:text-fg">
-                What makes a move brilliant
-              </Link>{" "}
-              &middot;{" "}
-              <Link href="/how-it-works" className="underline decoration-line underline-offset-4 hover:text-fg">
-                The full method
+            {/* Phones: logo + sound on row one, links on a full-width row two (order swaps them back from sm up). */}
+            <div className="order-last flex w-full items-center justify-between gap-x-4 sm:order-none sm:ml-auto sm:w-auto sm:justify-end">
+              <Link href="/how-it-works" className="text-sm text-muted hover:text-fg">
+                How it works
               </Link>
-            </p>
-          </div>
-          <VerdictLadder />
-        </div>
-      </section>
-
-      <section id="mobile" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
-        <div className="flex flex-col items-start justify-between gap-8 rounded-2xl border border-line bg-surface p-8 sm:p-12 lg:flex-row lg:items-center">
-          <div>
-            <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">
-              Also on Android
-            </h2>
-            <p className="mt-4 max-w-[52ch] text-lg text-pretty text-muted">
-              Review games on your phone with Stockfish 19, move verdicts, coach notes and retry mode. Free, no account, and opens shared Hindsight links straight in the app.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-start gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-end">
-            <a
-              href={APK_URL}
-              className="inline-flex items-center gap-2.5 rounded-lg bg-accent px-6 py-3.5 text-base font-bold text-[#141311] hover:brightness-110"
+              <a
+                href={APK_URL}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-sm font-bold text-[#141311] hover:brightness-110"
+              >
+                <Icon name="download" size={16} />
+                Get the Android app
+              </a>
+              <p className="hidden text-sm text-muted lg:block">Free · No account · Chess.com & Lichess</p>
+            </div>
+            <button
+              onClick={toggleSound}
+              aria-pressed={sound}
+                className="flex items-center gap-2 rounded-full bg-raised px-3 py-1.5 text-sm font-semibold text-muted hover:text-fg aria-pressed:text-fg"
             >
-              <Icon name="download" size={18} />
-              Download Android APK
-            </a>
-            <a href={RELEASES_URL} className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-fg">
-              Latest release on GitHub
-            </a>
-          </div>
-        </div>
-      </section>
+              <Icon name={sound ? "soundOn" : "soundOff"} size={18} />
+              <span className="sr-only md:not-sr-only">{sound ? "Sound on" : "Sound off"}</span>
+            </button>
+          </header>
 
-      <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
-        <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Questions</h2>
-        <div className="mt-8 grid max-w-[60ch] gap-6">
-          {FAQ.map(({ q, a, link }) => (
-            <div key={q}>
-              <h3 className="text-xl font-bold">{q}</h3>
-              <p className="mt-2 text-pretty text-muted">
-                {a}
-                {link && (
-                  <>
-                    {" "}
-                    <Link href={link.href} className="underline decoration-line underline-offset-4 hover:text-fg">
-                      {link.text}
-                    </Link>
-                    .
-                  </>
-                )}
+          <div className="lg:col-start-2 lg:row-start-2 lg:pt-8">
+            <h1 className="text-[clamp(2.4rem,5.4vw,5.25rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">
+              {/* The search phrase belongs in the H1; it reads as an eyebrow so the brand line stays the headline. */}
+              <span className="mb-4 block text-sm font-semibold tracking-normal text-muted">Free chess game review for Chess.com &amp; Lichess</span>
+              Every move, judged.
+            </h1>
+            <p className="mt-5 max-w-[34ch] text-lg text-pretty text-muted">
+              See where your game turned: every move rated, mistakes explained, the better move on the board.
+            </p>
+            <p className="mt-3 max-w-[40ch] text-sm text-muted">60 reviews a day, powered by Stockfish.</p>
+          </div>
+
+          <div
+            className="relative flex flex-col lg:col-start-1 lg:row-span-2 lg:row-start-2 lg:block lg:self-center"
+            onMouseEnter={() => setHeld(true)}
+            onMouseLeave={() => setHeld(false)}
+            onFocus={() => setHeld(true)}
+            onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setHeld(false)}
+          >
+            <div className="mx-auto flex w-full max-w-[calc(100dvh-7.5rem)] gap-2">
+              <EvalBar ev={move ?? DEMO.start} flipped={false} />
+              <div className="min-w-0 flex-1 shadow-[0_24px_70px_rgba(0,0,0,0.5)]" aria-label="Demo review of the Opera Game" role="img">
+                <Board fen={move?.fen ?? START_FEN} flipped={false} move={move} fx={{ intensity: "epic", prevFen: ply > 1 ? DEMO.moves[ply - 2].fen : START_FEN }} />
+              </div>
+            </div>
+            {/* Phones: the finder comes before the demo board so the main action is above the fold; desktop overlays it on the board. */}
+            <div className="relative z-40 order-first mx-auto mb-4 w-full max-w-[calc(100dvh-7.5rem)] lg:absolute lg:order-none lg:mb-0 lg:inset-x-0 lg:bottom-[5%] lg:mt-0 lg:px-[7%] lg:pl-[calc(7%+2.25rem)]">
+              <GameFinder onGames={(games, username, platform) => setFound({ games, username, platform })} onPgn={review} />
+            </div>
+          </div>
+
+          <aside className="flex min-h-0 flex-col gap-4 lg:col-start-2 lg:row-start-3 lg:max-h-[calc(100dvh-22rem)]">
+            {found ? (
+              <GameList
+                games={found.games}
+                username={found.username}
+                onPick={review}
+                onClose={() => setFound(null)}
+                playerHref={`/player?p=${found.platform}&u=${encodeURIComponent(found.username)}`}
+              />
+            ) : (
+              <>
+                {/* Graph first: the coach card changes height per move, and a control must not move under the cursor. */}
+                <div className="h-16 shrink-0">
+                  <EvalGraph
+                    report={DEMO}
+                    ply={ply}
+                    onSelect={(p) => {
+                      setStep(p);
+                      setHeld(true);
+                    }}
+                    className="h-full"
+                  />
+                </div>
+                <CoachCard move={move} totalPlies={LAST} opening={DEMO.opening} />
+                <p className="text-sm text-muted">
+                  A real Hindsight review of the Opera Game: Paul Morphy vs the Duke of Brunswick and Count Isouard, Paris 1858. Accuracy{" "}
+                  <span className="font-semibold text-fg tabular-nums">{DEMO.accuracy.white}</span> vs{" "}
+                  <span className="font-semibold text-fg tabular-nums">{DEMO.accuracy.black}</span>. Click the graph to jump.
+                </p>
+              </>
+            )}
+          </aside>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+          <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Where the game turned</h2>
+          <p className="mt-4 max-w-[52ch] text-lg text-pretty text-muted">
+            The graph is White&rsquo;s chance of winning, move by move. The review finds the moments that moved it and tells you why.
+          </p>
+          <div className="mt-10 h-44 sm:h-56">
+            <EvalGraph report={DEMO} ply={ply} onSelect={(p) => setStep(p)} className="h-full" />
+          </div>
+          <ol className="mt-8 grid gap-8 md:grid-cols-3">
+            {TURNING.map((m) => (
+              <li key={m.ply} className="border-t-2 pt-5" style={{ borderColor: BADGE[m.badge].color }}>
+                {/* Mounted near the viewport: three extra boards in the static HTML cost ~100 images and hydration work up front. */}
+                <InView className="mb-5 aspect-square max-w-[300px]">
+                  <Board id={`turning-${m.ply}`} fen={m.fen} flipped={false} move={m} />
+                </InView>
+                <p className="flex items-center gap-3 text-xl font-bold">
+                  <BadgeIcon badge={m.badge} size={30} />
+                  <span>
+                    <span className="tabular-nums">
+                      {Math.ceil(m.ply / 2)}.{m.color === "black" ? ".." : ""}
+                    </span>{" "}
+                    {m.san} <span style={{ color: BADGE[m.badge].color }}>{BADGE[m.badge].phrase}</span>
+                  </span>
+                </p>
+                <p className="mt-3 text-pretty text-fg/85">{m.coach}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="verdicts" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <div>
+              <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">Ten verdicts, one scale</h2>
+              <p className="mt-4 max-w-[38ch] text-lg text-pretty text-muted">
+                Every move gets one, measured by how much of your winning chances it kept or gave away.
+              </p>
+              <p className="mt-4 max-w-[38ch] text-pretty text-muted">
+                <Link href="/brilliant-move" className="underline decoration-line underline-offset-4 hover:text-fg">
+                  What makes a move brilliant
+                </Link>{" "}
+                &middot;{" "}
+                <Link href="/how-it-works" className="underline decoration-line underline-offset-4 hover:text-fg">
+                  The full method
+                </Link>
               </p>
             </div>
-          ))}
-        </div>
-      </section>
+            <VerdictLadder />
+          </div>
+        </section>
 
-      <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-24 sm:px-8 lg:pt-32">
-        <div className="flex flex-col items-start gap-8 border-t border-line pt-14 md:flex-row md:items-end md:justify-between">
-          <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">Your last game is waiting.</h2>
-          <button onClick={toFinder} className="shrink-0 rounded-lg bg-accent px-7 py-4 text-lg font-bold text-[#141311] hover:brightness-110">
-            Find my games
-          </button>
-        </div>
-      </section>
+        <section id="mobile" className="mx-auto w-full max-w-[1400px] scroll-mt-6 px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+          <div className="flex flex-col items-start justify-between gap-8 rounded-2xl border border-line bg-surface p-8 sm:p-12 lg:flex-row lg:items-center">
+            <div>
+              <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em] text-balance">
+                Also on Android
+              </h2>
+              <p className="mt-4 max-w-[52ch] text-lg text-pretty text-muted">
+                Review games on your phone with Stockfish 19, move verdicts, coach notes and retry mode. Free, no account, and opens shared Hindsight links straight in the app.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-start gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-end">
+              <a
+                href={APK_URL}
+                className="inline-flex items-center gap-2.5 rounded-lg bg-accent px-6 py-3.5 text-base font-bold text-[#141311] hover:brightness-110"
+              >
+                <Icon name="download" size={18} />
+                Download Android APK
+              </a>
+              <a href={RELEASES_URL} className="text-sm text-muted underline decoration-line underline-offset-4 hover:text-fg">
+                Latest release on GitHub
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-16 sm:px-8 lg:pt-28">
+          <h2 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-none font-extrabold tracking-[-0.035em]">Questions</h2>
+          <div className="mt-8 grid max-w-[60ch] gap-6">
+            {FAQ.map(({ q, a, link }) => (
+              <div key={q}>
+                <h3 className="text-xl font-bold">{q}</h3>
+                <p className="mt-2 text-pretty text-muted">
+                  {a}
+                  {link && (
+                    <>
+                      {" "}
+                      <Link href={link.href} className="underline decoration-line underline-offset-4 hover:text-fg">
+                        {link.text}
+                      </Link>
+                      .
+                    </>
+                  )}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1400px] px-4 pt-20 pb-24 sm:px-8 lg:pt-32">
+          <div className="flex flex-col items-start gap-8 border-t border-line pt-14 md:flex-row md:items-end md:justify-between">
+            <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.95] font-extrabold tracking-[-0.04em] text-balance">Your last game is waiting.</h2>
+            <button onClick={toFinder} className="shrink-0 rounded-lg bg-accent px-7 py-4 text-lg font-bold text-[#141311] hover:brightness-110">
+              Find my games
+            </button>
+          </div>
+        </section>
+      </main>
 
       <footer className="mx-auto w-full max-w-[1400px] px-4 pb-10 text-sm text-muted sm:px-8">
         <nav className="mb-4 flex flex-wrap gap-x-5 gap-y-2">

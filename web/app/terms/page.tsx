@@ -10,7 +10,7 @@ export const metadata = pageMeta(PATH, TITLE, DESCRIPTION);
 
 export default function TermsOfService() {
   return (
-    <ArticleShell path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-24" updated="November 24, 2026">
+    <ArticleShell type="WebPage" path={PATH} title={TITLE} description={DESCRIPTION} modified="2026-11-24" updated="November 24, 2026">
       <section className={SECTION}>
         <h2 className={H2}>Using Hindsight</h2>
         <p className={P}>
